@@ -1,24 +1,34 @@
 package main
 
-import(
-	"log"
+import (
+	// "capstone.com/module/map/handler"
 
-	"capstone.com/module/map/handler"
-
-	"github.com/joho/godotenv"
-	"github.com/labstack/echo" // echo프레임워크 사용 // 높은 성능
+	"github.com/gin-gonic/gin"
+	"capstone.com/configs"
+	"capstone.com/routes"
+	// "github.com/joho/godotenv"
+	// "github.com/labstack/echo" // echo프레임워크 사용 // 높은 성능
 )
 
 func main() {
 
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+	router := gin.Default()
 
-	err := echo.New()
-	e.POST("/map", handler.Map)
+	configs.ConnectDB()
 
-	e.Logger.Fatal(e.Start("192.168.50.140:8000"))
+	routes.MapRoute(router)
+
+	router.Run("localhost:8000")
+
+	// router.GET("/", func(c *gin.Context) {
+	// 	c.JSON(200, gin.H{
+	// 		"data": "Hello from Gin-Gonic & mongoDB",
+	// 	})
+	// })
+
+	// router.POST("/map", handler.Map)
+	// router.Run("192.168.50.140:8000")
+
+	// router.Run("localhost:8000")
 
 }
