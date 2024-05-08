@@ -17,36 +17,63 @@ import (
 
 var mapCollection *mongo.Collection = configs.GetCollection(configs.DB, "map")
 
-
 // json 파일 DB 저장
 func CreateMap() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
 
 		// 동적으로 Key-Value 쌍 저장 가능
 		mapdata := make(map[string]interface{}) // 빈 맵 생성(동적으로 key-value쌍 저장 가능)
 		// var map_data models.MapData // map 함수 이름 존재하므로 map쓰면 안됨 + 동적 저장이므로 struct 필요 없음
 
-		defer cancel()
-
-        // 예외처리(기존에 있는 정보인지 확인 필요, 기존에 있는 정보라면 변경)
-        
-
+		// 예외처리(기존에 있는 정보인지 확인 필요, 기존에 있는 정보라면 변경) // 검증
 
 		//body 유효성 검증
 		if err := c.BindJSON(&mapdata); err != nil {
-			c.JSON(http.StatusBadRequest, responses.MapResponse{Status: http.StatusBadRequest, Message: "error"})
+			c.JSON(http.StatusBadRequest, responses.MapResponse{Code: 0, Message: "error"})
 			return
 		}
 
-		_, err := mapCollection.InsertOne(ctx, mapdata) // DB에 바로 저장
+		// mapdata에서 map_id, version, chunkNum 확인
+		mapId := mapdata["map_id"].(float64)
+		mapVersion := mapdata["version"].(float64)
+		mapChunk := mapdata["chunkNum"].(float64)
+
+		filter := bson.M{
+			"map_id":   mapId,
+			"version":  mapVersion,
+			"chunkNum": mapChunk,
+		}
+
+		var checkData map[string]interface{}
+		err := mapCollection.FindOne(ctx, filter).Decode(&checkData)
+
+		// Insert
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, responses.MapResponse{Status: http.StatusInternalServerError, Message: "error"})
+			if err == mongo.ErrNoDocuments {
+				_, err := mapCollection.InsertOne(ctx, mapdata) // DB에 바로 저장
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, responses.MapResponse{Code: 0, Message: "error"})
+					return
+				}
+				c.JSON(http.StatusCreated, responses.MapResponse{Code: 1, Message: "insert success"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, responses.MapResponse{Code: 0, Message: err.Error()})
 			return
 		}
 
-		c.JSON(http.StatusCreated, responses.MapResponse{Status: http.StatusCreated, Message: "success"})
+		// Update
+		_, err = mapCollection.ReplaceOne(ctx, filter, mapdata)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, responses.MapResponse{Code: 0, Message: "error"})
+			return
+		}
+
+		c.JSON(http.StatusOK, responses.MapResponse{Code: 1, Message: "update success"})
+
 	}
 }
 
@@ -75,19 +102,29 @@ func GetMap() gin.HandlerFunc {
 
 		fmt.Println("filter", filter)
 
+		// ObjectId 제거
 		err := mapCollection.FindOne(ctx, filter).Decode(&mapinfo)
 		fmt.Println("mapinfo", mapinfo)
 
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
-				c.JSON(http.StatusNotFound, gin.H{"error": "No documents found"})
+				c.JSON(http.StatusNotFound, responses.MapResponse{Code: 0, Message: "No documents found"})
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, responses.MapResponse{Code: 0, Message: err.Error()})
 			return
 		}
 
+		// 특정 key 제외
+		filtermapinfo := make(map[string]interface{})
+
+		for key, value := range mapinfo {
+			if key != "_id" {
+				filtermapinfo[key] = value
+			}
+		}
+
 		// 데이터 반환
-		c.JSON(http.StatusOK, mapinfo)
+		c.JSON(http.StatusOK, responses.MapResponse_map{Code: 1, Message: filtermapinfo})
 	}
 }
