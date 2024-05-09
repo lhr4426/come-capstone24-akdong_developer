@@ -42,7 +42,7 @@ func CreateMap() gin.HandlerFunc {
 		mapVersion := mapdata["version"].(float64)
 		mapChunk := mapdata["chunkNum"].(float64)
 
-		fmt.Println("3333333333333", mapId, mapVersion, mapChunk)
+		// fmt.Println("3333333333333", mapId, mapVersion, mapChunk)
 
 		// 중복 확인을 위한 filter
 		filter := bson.M{
@@ -55,7 +55,7 @@ func CreateMap() gin.HandlerFunc {
 			},
 		}
 
-		fmt.Println(filter)
+		// fmt.Println(filter)
 
 		var existingData map[string]interface{}
 		err := mapCollection.FindOne(ctx, filter).Decode(&existingData) // 다른 map으로 만들것, 계속 같은 mapdata(들어온 값)사용해서 오류남, existingData(확인하는 값)
@@ -129,11 +129,11 @@ func GetMap() gin.HandlerFunc {
 			"chunkNum": mapChunk,
 		}
 
-		fmt.Println("filter", filter)
+		// fmt.Println("filter", filter)
 
 		// ObjectId 제거
 		err := mapCollection.FindOne(ctx, filter).Decode(&mapinfo)
-		fmt.Println("mapinfo", mapinfo)
+		// fmt.Println("mapinfo", mapinfo)
 
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
@@ -198,7 +198,7 @@ func GetList() gin.HandlerFunc {
 			return
 		}
 
-		fmt.Println(results)
+		// fmt.Println(results)
 
 		// JSON으로 결과 반환
 		c.JSON(http.StatusOK, responses.MapResponse_list{Code: 1, Message: results})
