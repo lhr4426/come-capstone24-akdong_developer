@@ -5,7 +5,9 @@ import (
 	"asset_http_go/models"
 	"asset_http_go/responses"
 	"context"
+	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -26,13 +28,13 @@ func CreateAsset() gin.HandlerFunc {
 
 		//validate the request body
 		if err := c.BindJSON(&asset); err != nil {
-			c.JSON(http.StatusBadRequest, responses.AssetResponse{Status: http.StatusBadRequest, Message: "error", Data: map[string]interface{}{"data": err.Error()}})
+			c.JSON(http.StatusBadRequest, responses.AssetResponse{Code: 0, Message: "Request validation failed: " + err.Error()})
 			return
 		}
 
 		//use the validator library to validate required fields
 		if validationErr := validate.Struct(&asset); validationErr != nil {
-			c.JSON(http.StatusBadRequest, responses.AssetResponse{Status: http.StatusBadRequest, Message: "error", Data: map[string]interface{}{"data": validationErr.Error()}})
+			c.JSON(http.StatusBadRequest, responses.AssetResponse{Code: 0, Message: "Validation error: " + validationErr.Error()})
 			return
 		}
 
@@ -41,6 +43,7 @@ func CreateAsset() gin.HandlerFunc {
 			Name:          asset.Name,
 			CategoryID:    asset.CategoryID,
 			Thumbnail:     asset.Thumbnail,
+			ThumbnailExt:  asset.ThumbnailExt,
 			File:          asset.File,
 			UploadDate:    asset.UploadDate,
 			DownloadCount: asset.DownloadCount,
@@ -48,31 +51,123 @@ func CreateAsset() gin.HandlerFunc {
 			IsDisable:     asset.IsDisable,
 		}
 
-		result, err := assetCollection.InsertOne(ctx, newAsset)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, responses.AssetResponse{Status: http.StatusInternalServerError, Message: "error", Data: map[string]interface{}{"data": err.Error()}})
+		// result, err := assetCollection.InsertOne(ctx, newAsset)
+		if _, err := assetCollection.InsertOne(ctx, newAsset); err != nil {
+			c.JSON(http.StatusInternalServerError, responses.AssetResponse{Code: 0, Message: "Database insertion error: " + err.Error()})
 			return
 		}
 
-		c.JSON(http.StatusCreated, responses.AssetResponse{Status: http.StatusCreated, Message: "success", Data: map[string]interface{}{"data": result}})
+		fmt.Println("4@@@@@@@@@@@@@@@@")
+		//c.JSON(http.StatusCreated, responses.AssetResponse{Code: 1, Message: "success"})
+		c.JSON(http.StatusCreated, responses.AssetResponse{Code: 1, Message: "Asset created successfully"})
+		// c.JSON(http.StatusCreated, responses.AssetResponse{Status: http.StatusCreated, Message: "success", Data: map[string]interface{}{"data": result}})
 	}
 }
 
 func GetAsset() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		assetID := c.Param("assetID")
-		var asset models.Asset
 		defer cancel()
 
-		objId, _ := primitive.ObjectIDFromHex(assetID)
+		var results []models.SearchResult
 
-		err := assetCollection.FindOne(ctx, bson.M{"_id": objId}).Decode(&asset)
+		name := c.Query("name")
+		categoryidStr := c.Query("categoryid")
+
+		filter := bson.M{}
+		if name != "" {
+			filter["name"] = bson.M{"$regex": primitive.Regex{Pattern: name, Options: "i"}} // 대소문자 구분 없이 이름 검색
+		}
+		if categoryidStr != "" {
+			categoryid, err := strconv.Atoi(categoryidStr) // 문자열을 정수로 변환
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"code": 0, "message": "Invalid category ID"})
+				return
+			}
+			filter["categoryid"] = categoryid
+		}
+
+		cur, err := assetCollection.Find(ctx, filter)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, responses.AssetResponse{Status: http.StatusInternalServerError, Message: "error", Data: map[string]interface{}{"data": err.Error()}})
+			c.JSON(http.StatusInternalServerError, gin.H{"code": 0, "message": "Database query failed"})
+			return
+		}
+		defer cur.Close(ctx)
+
+		for cur.Next(ctx) {
+			var asset models.Asset
+			if err := cur.Decode(&asset); err != nil {
+				continue
+			}
+			result := models.SearchResult{
+				ID:           asset.ID.Hex(),
+				Name:         asset.Name,
+				Thumbnail:    asset.Thumbnail,
+				ThumbnailExt: asset.ThumbnailExt,
+			}
+			results = append(results, result)
+		}
+
+		if err := cur.Err(); err != nil {
+			c.JSON(http.StatusInternalServerError, responses.AssetResponse{Code: 0, Message: "Error reading from database: " + err.Error()})
 			return
 		}
 
-		c.JSON(http.StatusOK, responses.AssetResponse{Status: http.StatusOK, Message: "success", Data: map[string]interface{}{"data": asset}})
+		if len(results) == 0 {
+			c.JSON(http.StatusOK, responses.AssetResponse{Code: 1, Message: "Success, but no assets found matching the criteria", Data: results})
+		} else {
+			c.JSON(http.StatusOK, responses.AssetResponse{Code: 1, Message: "Assets retrieved successfully", Data: results})
+		}
+	}
+}
+
+func DownAsset() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		var results []models.DownFile
+		// asset id
+		id := c.Query("id")
+
+		filter := bson.M{}
+		if id != "" {
+			objID, err := primitive.ObjectIDFromHex(id) // 문자열 ID를 ObjectID로 변환
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"code": 0, "message": "Invalid ID format"})
+				return
+			}
+			filter["_id"] = objID // 정확한 ObjectID로 필터링
+		}
+
+		cur, err := assetCollection.Find(ctx, filter)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"code": 0, "message": "Database query failed"})
+			return
+		}
+		defer cur.Close(ctx)
+
+		for cur.Next(ctx) {
+			var asset models.Asset
+			if err := cur.Decode(&asset); err != nil {
+				continue
+			}
+			result := models.DownFile{
+				ID:   asset.ID.Hex(),
+				File: asset.File,
+			}
+			results = append(results, result)
+		}
+
+		if err := cur.Err(); err != nil {
+			c.JSON(http.StatusInternalServerError, responses.AssetResponse{Code: 0, Message: "Error reading from database: " + err.Error()})
+			return
+		}
+
+		if len(results) == 0 {
+			c.JSON(http.StatusOK, responses.AssetResponse{Code: 1, Message: "Success, but no assets found matching the criteria", Data: results})
+		} else {
+			c.JSON(http.StatusOK, responses.AssetResponse{Code: 1, Message: "Assets retrieved successfully", Data: results})
+		}
 	}
 }

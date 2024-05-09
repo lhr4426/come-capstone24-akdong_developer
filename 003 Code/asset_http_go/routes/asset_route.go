@@ -8,5 +8,6 @@ import (
 
 func AssetRoute(router *gin.Engine) {
 	router.POST("/asset_upload", controllers.CreateAsset())
-	router.GET("/asset_info", controllers.GetAsset())
+	router.GET("/asset_search", controllers.GetAsset())
+	router.GET("/asset_down", controllers.DownAsset())
 }
