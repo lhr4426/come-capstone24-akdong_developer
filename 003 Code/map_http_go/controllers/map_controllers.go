@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var mapCollection *mongo.Collection = configs.GetCollection(configs.DB, "map")
@@ -34,23 +35,30 @@ func CreateMap() gin.HandlerFunc {
 			return
 		}
 
-		fmt.Println("2222222222222", mapdata) // 어떤거 나오는지 비교, json 받아온 값 확인
+		// fmt.Println("2222222222222", mapdata) // 어떤거 나오는지 비교, json 받아온 값 확인
 
 		// mapdata에서 map_id, version, chunkNum 확인
 		mapId := mapdata["map_id"].(float64)
 		mapVersion := mapdata["version"].(float64)
 		mapChunk := mapdata["chunkNum"].(float64)
 
-		fmt.Println("3333333333333", mapId, mapVersion, mapChunk) 
+		fmt.Println("3333333333333", mapId, mapVersion, mapChunk)
 
 		// 중복 확인을 위한 filter
 		filter := bson.M{
-			"map_id":   mapId,
-			"version":  mapVersion,
-			"chunkNum": mapChunk,
+			"$and": []bson.M{
+				{"map_id":mapId},
+				{"version": mapVersion},
+				// {"map_id": mapId},
+				// {"version": mapVersion},
+				{"chunkNum":mapChunk},
+			},
 		}
 
-		err := mapCollection.FindOne(ctx, filter).Decode(&mapdata)
+		fmt.Println(filter)
+
+		var existingData map[string]interface{}
+		err := mapCollection.FindOne(ctx, filter).Decode(&existingData)
 
 		// 중복 없을 때 Insert
 		if err != nil {
@@ -62,28 +70,36 @@ func CreateMap() gin.HandlerFunc {
 				}
 				c.JSON(http.StatusCreated, responses.MapResponse{Code: 1, Message: "insert success"})
 				return
-			}
+			} else {
 			c.JSON(http.StatusInternalServerError, responses.MapResponse{Code: 0, Message: err.Error()})
 			return
+			}
 		}
 
 		// Update(모두 삭제 하고 Insert)
 		// 모두 삭제(if chunkNum이 더 있으면)
-		_, err = mapCollection.ReplaceOne(ctx, filter, mapdata)
-		if err != nil {
+		_, err2 := mapCollection.ReplaceOne(ctx, filter, mapdata)
+		if err2 != nil {
 			c.JSON(http.StatusInternalServerError, responses.MapResponse{Code: 0, Message: "error"})
 			return
 		}
 
 		// 만약 map_id, version, chunk(개수), mapdata 제외하고 map_id, version있는거 모두 삭제
-			// 만약 짧은 정보가 Update 된다면 나머지 Chunk_Num을 삭제
-			// 첫번째가 중복되면 이후 chunk_num 모두 삭제하기, 그러면 다음부터는 create가능
-
-		chk_filter := bson.M{
-			"chunkNum": mapChunk
+		// 만약 짧은 정보가 Update 된다면 나머지 Chunk_Num을 삭제
+		// 첫번째가 중복되면 이후 chunk_num 모두 삭제하기, 그러면 다음부터는 create가능,
+		// -> chunk_num이 들어온 값보다 큰 값이 있으면 삭제
+		filterDelete := bson.M{
+			"$and": []bson.M{
+				{"map_id": mapId},
+				{"version": mapVersion},
+				{"chunkNum": bson.M{"$gt": mapChunk}},
+			},
 		}
 
-		chk_err := mapCollection.DeleteMany(ctx, ).Decode(&mapdata)
+		_, chk_err := mapCollection.DeleteMany(ctx, filterDelete)
+		if chk_err != nil {
+			c.JSON(http.StatusInternalServerError, responses.MapResponse{Code: 0, Message: "delete err"})
+		}
 
 		c.JSON(http.StatusOK, responses.MapResponse{Code: 1, Message: "update success"})
 
@@ -139,5 +155,52 @@ func GetMap() gin.HandlerFunc {
 
 		// 데이터 반환
 		c.JSON(http.StatusOK, responses.MapResponse_map{Code: 1, Message: filtermapinfo}) // 형변환
+	}
+}
+
+func GetList() gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		// 표시되는 필드만 표현
+		projection := bson.M{
+			"_id":     0,
+			"map_id":  1,
+			"mapName": 1,
+		}
+
+		// filter 모두 존재하는 경우에만 출력
+		filter := bson.M{
+			"$and": []bson.M{
+				{"map_id": bson.M{"$exists": true}},
+				{"mapName": bson.M{"$exists": true}},
+				{"chunkNum": 0},
+			},
+		}
+
+		// collection.Find(context:취소 시그널 및 타임아웃 전달, 빈맵 : 모든 문서 선택, setProjection(검색 옵션 설정))
+		// cursor : 결과 집합의 다음 항목 가져올 수 있음
+		//cursor, err := mapCollection.Find(ctx, bson.M{}, options.Find().SetProjection(projection)) // rejection이랑 filter 정확하게 알기
+		cursor, err := mapCollection.Find(ctx, filter, options.Find().SetProjection(projection))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, responses.MapResponse{Code: 0, Message: "error"})
+			return
+		}
+
+		fmt.Println(cursor)
+
+		// cursor에서 반환된 모든 값을 가져와 map[string]interface{} 슬라이스로 변환
+		var results []map[string]interface{} // 여러개라서 []map[string]interface{}
+		if err = cursor.All(ctx, &results); err != nil {
+			c.JSON(http.StatusInternalServerError, responses.MapResponse{Code: 0, Message: "error"})
+			return
+		}
+
+		fmt.Println(results)
+
+		// JSON으로 결과 반환
+		c.JSON(http.StatusOK, responses.MapResponse_list{Code: 1, Message: results})
 	}
 }
