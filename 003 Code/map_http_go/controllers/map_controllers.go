@@ -46,7 +46,7 @@ func CreateMap() gin.HandlerFunc {
 
 		// 중복 확인을 위한 filter
 		filter := bson.M{
-			"$and": []bson.M{
+			"$and": []bson.M{ // &인지 $인지 잘 구분할것
 				{"map_id":mapId},
 				{"version": mapVersion},
 				// {"map_id": mapId},
@@ -58,7 +58,7 @@ func CreateMap() gin.HandlerFunc {
 		fmt.Println(filter)
 
 		var existingData map[string]interface{}
-		err := mapCollection.FindOne(ctx, filter).Decode(&existingData)
+		err := mapCollection.FindOne(ctx, filter).Decode(&existingData) // 다른 map으로 만들것, 계속 같은 mapdata(들어온 값)사용해서 오류남, existingData(확인하는 값)
 
 		// 중복 없을 때 Insert
 		if err != nil {
