@@ -45,7 +45,7 @@ func CreateAsset() gin.HandlerFunc {
 			Thumbnail:     asset.Thumbnail,
 			ThumbnailExt:  asset.ThumbnailExt,
 			File:          asset.File,
-			UploadDate:    asset.UploadDate,
+			UploadDate:    time.Now(),
 			DownloadCount: asset.DownloadCount,
 			Price:         asset.Price,
 			IsDisable:     asset.IsDisable,
@@ -65,6 +65,65 @@ func CreateAsset() gin.HandlerFunc {
 }
 
 func GetAsset() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		var results []models.AssetInfo
+		// asset id
+		id := c.Query("id")
+
+		filter := bson.M{}
+		if id != "" {
+			objID, err := primitive.ObjectIDFromHex(id) // 문자열 ID를 ObjectID로 변환
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"code": 0, "message": "Invalid ID format"})
+				return
+			}
+			filter["_id"] = objID // 정확한 ObjectID로 필터링
+		}
+
+		cur, err := assetCollection.Find(ctx, filter)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"code": 0, "message": "Database query failed"})
+			return
+		}
+		defer cur.Close(ctx)
+
+		for cur.Next(ctx) {
+			var asset models.Asset
+			if err := cur.Decode(&asset); err != nil {
+				continue
+			}
+			result := models.AssetInfo{
+				ID:            asset.ID.Hex(),
+				Name:          asset.Name,
+				CategoryID:    strconv.Itoa(asset.CategoryID), // int를 string으로 변환
+				Thumbnail:     asset.Thumbnail,
+				ThumbnailExt:  asset.ThumbnailExt,
+				File:          asset.File,
+				UploadDate:    asset.UploadDate.Format(time.RFC3339), // time.Time을 RFC3339 문자열로 변환
+				DownloadCount: strconv.Itoa(asset.DownloadCount),     // int를 string으로 변환
+				Price:         strconv.Itoa(asset.Price),             // int를 string으로 변환
+				IsDisable:     strconv.FormatBool(asset.IsDisable),   // bool을 string으로 변환
+			}
+			results = append(results, result)
+		}
+
+		if err := cur.Err(); err != nil {
+			c.JSON(http.StatusInternalServerError, responses.AssetResponse{Code: 0, Message: "Error reading from database: " + err.Error()})
+			return
+		}
+
+		if len(results) == 0 {
+			c.JSON(http.StatusOK, responses.AssetResponse{Code: 1, Message: "Success, but no assets found matching the criteria", Data: results})
+		} else {
+			c.JSON(http.StatusOK, responses.AssetResponse{Code: 1, Message: "Assets retrieved successfully", Data: results})
+		}
+	}
+}
+
+func SearchAsset() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
