@@ -33,8 +33,14 @@ type AssetInfo struct {
 }
 
 type SearchResult struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	// Thumbnail    string `json:"thumbnail"`
+	// ThumbnailExt string `json:"thumbnailext"`
+}
+
+type DownThumbnail struct {
 	ID           string `json:"id"`
-	Name         string `json:"name"`
 	Thumbnail    string `json:"thumbnail"`
 	ThumbnailExt string `json:"thumbnailext"`
 }
