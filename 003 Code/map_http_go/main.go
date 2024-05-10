@@ -14,8 +14,6 @@ func main() {
 
 	routes.MapRoute(router)
 
-	// router.Run("localhost:8000")
-
-	router.Run("192.168.50.140:8080")
+	router.Run("0.0.0.0:8080")
 
 }

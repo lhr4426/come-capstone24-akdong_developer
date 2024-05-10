@@ -1,26 +1,28 @@
 package main
 
 import (
-	"log"
 
-	"module/bin"
+	// "module/bin"
+
+	"log"
+	"net/http"
 
 	"capstone.com/module/handler"
-	"github.com/joho/godotenv"
-	"github.com/labstack/echo" // echo프레임워크 사용
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
 
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatal("Error loading .env file")
+	router := gin.Default()
+	router.POST("/signup", handler.SignUp())
+	router.POST("/login", handler.LogIn())
+
+	log.Println("start login server")
+	server := &http.Server{
+		//Addr: "8080",
 	}
-
-	e := echo.New()
-	e.POST("/signup", handler.SignUp)
-	e.POST("/login", handler.LogIn)
-
-	e.Logger.Fatal(e.Start(bin.IP))
-
+	if err := server.ListenAndServe(); err != nil {
+		log.Println(err)
+	}
+	router.Run("0.0.0.0:8000")
 }
