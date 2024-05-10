@@ -1,10 +1,10 @@
 FROM golang:1.22.2
 
-WORKDIR /server_map
+WORKDIR /server_login
 
-COPY ./map_http_go /server_map
+COPY ./login_http_go /server_login
 
-# RUN go mod download && go mod verify
+RUN go mod download && go mod verify
 
 RUN go build -o main
 
