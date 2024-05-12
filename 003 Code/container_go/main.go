@@ -9,6 +9,11 @@ import (
     "path/filepath"
 )
 
+// err !!
+// --> no such file or directory
+
+//sudo -Es(root)
+
 // 지우고 생성할때, root권한으로 해서 문제가 아주 많음!!!
 // 아무래도 root에 있는 거 잘못 건들인듯 ! (그대로 하면 컴터 날라가니까 조심하기 ,,,,,)
 
@@ -82,15 +87,26 @@ func runContainer() error {
 
     fmt.Println("Setting cgroup&container")
 	// 컨테이너 격리 및 Cgroups 할당
-	err = exec.Command("unshare", "--mount", "--pid", "--fork").Run()
+	// err = exec.Command("unshare", "--mount", "--pid", "--fork").Run()
+	// if err != nil {
+	// 	return err
+	// }
+	// 컨테이너 격리 및 Cgroups 할당
+	err = syscall.Unshare(syscall.CLONE_NEWNS | syscall.CLONE_NEWPID)
 	if err != nil {
 		return err
 	}
 
     fmt.Println("overlay mount")
 	// overlay mount
-	err = exec.Command("mount", "--rbind", "/my_container/rootfs", "/").Run()
+	// err = exec.Command("mount", "--rbind", "/my_container/rootfs", "/").Run() // run OK
+	// if err != nil {
+	// 	return err
+	// }
+	// overlay mount
+	err = mountOverlay("my_container/rootfs", "/") // no such file or directory
 	if err != nil {
+		fmt.Println("mountOverlayerr")
 		return err
 	}
 
@@ -101,21 +117,34 @@ func runContainer() error {
 		return err
 	}
 
-	// --- 관리자 권한으로 실행하면 여기까지 잘됨 -- 
 
     fmt.Println("new chroot")
 	// 새로운 루트로 chroot
-	err = syscall.Chroot("/my_container/rootfs")
+	// err = syscall.Chroot("/my_container/rootfs")
+	// if err != nil {
+	// 	return err
+	// }
+	err = syscall.Chroot(".")
 	if err != nil {
 		return err
 	}
 
 	// 컨테이너 내부 프로세스 실행
-	cmd := exec.Command("/my_container/rootfs/bin/bash")
+	cmd := exec.Command("/bin/bash")
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
+}
+
+func mountOverlay(rootfs, mountpoint string) error {
+
+	err := os.MkdirAll("/tmp/overlay-work", 0755)
+	if err != nil {
+		return err
+	}
+
+	return syscall.Mount("overlay", mountpoint, "overlay", syscall.MS_RELATIME, fmt.Sprintf("lowerdir=%s,upperdir=%s,workdir=/tmp/overlay-work", rootfs, rootfs))
 }
 
 // pivot_root 함수
@@ -129,33 +158,26 @@ func pivotRoot(newRoot string) error {
 	// 	}
 	// }
 
-	if _, err := os.Stat(putOld); err == nil{
-		return nil
-	}
-
-	if err := syscall.Mount(newRoot, newRoot, "bind", syscall.MS_BIND|syscall.MS_REC, ""); err != nil {
+	// pivot_root 수행
+	err := syscall.PivotRoot(newRoot, putOld)
+	if err != nil {
 		return err
 	}
 
-	// 새로운 rootfs로 unmount
-	if err := syscall.Mount("", newRoot, "", syscall.MS_PRIVATE|syscall.MS_REC, ""); err != nil {
+	// 현재 디렉토리를 루트로 변경
+	err = syscall.Chdir("/")
+	if err != nil {
 		return err
 	}
 
-	// old root를 임시로 저장
-	if err := os.Mkdir(putOld, 0700); err != nil {
-		return err
-	}
-	if err := syscall.PivotRoot(newRoot, putOld); err != nil {
+	// putOld 마운트 해제
+	err = syscall.Unmount(putOld, syscall.MNT_DETACH)
+	if err != nil {
 		return err
 	}
 
-	// old root를 삭제
-	if err := os.Chdir("/"); err != nil {
-		return err
-	}
-	putOld = "/.pivot_root"
-	return syscall.Unmount(putOld, syscall.MNT_DETACH)
+	// putOld 디렉토리 삭제
+	return os.Remove(putOld)
 }
 
 func main() {
