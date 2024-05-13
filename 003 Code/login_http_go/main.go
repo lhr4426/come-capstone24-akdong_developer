@@ -19,10 +19,11 @@ func main() {
 
 	log.Println("start login server")
 	server := &http.Server{
-		//Addr: "8080",
+		// Addr: "8000",
 	}
 	if err := server.ListenAndServe(); err != nil {
 		log.Println(err)
 	}
-	router.Run("0.0.0.0:8000")
+
+	router.Run("192.168.50.140:8000")
 }
