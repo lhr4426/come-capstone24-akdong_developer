@@ -9,9 +9,15 @@ import (
 
 	"capstone.com/module/handler"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 
 	router := gin.Default()
 	router.POST("/signup", handler.SignUp())
@@ -25,5 +31,5 @@ func main() {
 		log.Println(err)
 	}
 
-	router.Run("192.168.50.140:8000")
+	router.Run("0.0.0.0:8000")
 }
