@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"capstone.com/controllers"
+	"map_http_go/controllers"
 	"github.com/gin-gonic/gin"
 )
 
@@ -10,4 +10,5 @@ func MapRoute(router *gin.Engine) {
 	router.POST("/map_data", controllers.CreateMap())
 	router.GET("/map_data", controllers.GetMap())
 	router.GET("/maplist", controllers.GetList())
+	router.GET("/maptime", controllers.Get_time())
 }

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"capstone.com/configs"
-	"capstone.com/routes"
+	"map_http_go/configs"
+	"map_http_go/routes"
 	"github.com/gin-gonic/gin"
 )
 
