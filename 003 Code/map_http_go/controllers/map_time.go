@@ -14,7 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// map_id값으로 timestamp 변경하기
+// map_id값으로 time반환
 func Get_time() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -50,25 +50,16 @@ func Get_time() gin.HandlerFunc {
 		}
 
 		// 결과가 없으면 에러 반환
-		// if len(results) == 0 {
-		// 	c.JSON(http.StatusNotFound, gin.H{"error": "No data found"})
-		// 	return
-		// }
+		if len(results) == 0 {
+			c.JSON(http.StatusNotFound, responses.MapResponse{Code: 0, Message: "No data found"})
+			return
+		}
 
-		// floattimestamp, ok := results[0]["mapCTime"].(float64)
-		// if !ok {
-		// 	fmt.Println("float64아님")
-		// }
-
-		// seconds := int64(floattimestamp)
-		// fmt.Println(seconds)
-		// nanoseconds := int64((floattimestamp - float64(seconds)) * 1e9)
-
-		// timestamp := time.Unix(seconds, nanoseconds)
-		// fmt.Println(timestamp)
+		fmt.Println(results)
+		str_results := results[0]["mapCTime"].(string)
 
 		// JSON으로 변환된 시간 반환
-		c.JSON(http.StatusOK, gin.H{"time": results})
+		c.JSON(http.StatusOK, responses.MapResponse{Code: 1, Message: str_results})
 
 	}
 
