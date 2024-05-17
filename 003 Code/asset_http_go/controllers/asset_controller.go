@@ -276,7 +276,7 @@ func DownAsset() gin.HandlerFunc {
 		}
 
 		if len(results) == 0 {
-			c.JSON(http.StatusOK, responses.AssetResponse{Code: 1, Message: "Success, but no assets found matching the criteria", Data: results})
+			c.JSON(http.StatusOK, responses.AssetResponse{Code: 0, Message: "Success, but no assets found matching the criteria", Data: results})
 		} else {
 			c.JSON(http.StatusOK, responses.AssetResponse{Code: 1, Message: "Assets retrieved successfully", Data: results})
 		}
