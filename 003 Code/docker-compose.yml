@@ -15,7 +15,7 @@ services:
       dockerfile: Dockerfile
     container_name: map
     ports:
-      - "8080:8080"
+      - "8070:8070"
     depends_on:
       - mongo
     environment:
