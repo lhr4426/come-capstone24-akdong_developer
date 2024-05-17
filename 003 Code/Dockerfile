@@ -4,11 +4,11 @@ WORKDIR /server_map
 
 COPY ./map_http_go /server_map
 
-# RUN go mod download && go mod verify
+# 모듈 종속성을 정리하고 누락된 모듈을 추가
+RUN go mod tidy
 
-RUN go build -o main
+# 모듈을 다운로드하고 검증
+RUN go mod download && go mod verify
 
-CMD ["./main"]
-
-# # 컨테이너 내에서 실행할 명령어 설정
-# CMD ["go","run","/server/main.go"]
+# main.go 파일을 직접 실행
+CMD ["go", "run", "/server_map/main.go"]
