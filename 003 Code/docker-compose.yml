@@ -13,7 +13,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: map-server
+    container_name: map
     ports:
       - "8080:8080"
     depends_on:
