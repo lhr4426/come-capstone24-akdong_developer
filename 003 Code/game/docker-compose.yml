@@ -5,10 +5,10 @@ services:
     image: mongo:latest
     container_name: game_mongo
     ports:
-      - "27014:27014"
+      - "27017:27017"
     volumes:
       - mongo-data:/data/db
-    command: ["mongod", "--port", "27014"]
+    command: ["mongod", "--port", "27017"]
 
   app:
     build:
@@ -18,11 +18,13 @@ services:
     depends_on:
       - mongo
     environment:
-      - MONGO_URI=${MONGO_URI}
+      - MONGO_URI=mongodb://localhost:27017 # 환경 변수를 직접 설정합니다.
     ports:
       - "8050:8050"
     volumes:
       - ./game_udp_go:/server_game
+    stdin_open: true
+    tty: true
 
 volumes:
   mongo-data:

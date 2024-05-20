@@ -41,7 +41,7 @@ var ListenerMap = map[string]listeners{
 
 var DBClient *mongo.Database
 
-var timezone, _ = time.LoadLocation("Asia/Seoul")
+// var timezone, _ = time.LoadLocation("Asia/Seoul")
 
 // 클라이언트 요청 처리 함수
 func GetRequest(conn *net.UDPConn) {
@@ -77,9 +77,9 @@ func HandleRequest(conn *net.UDPConn, addr *net.UDPAddr, msg string) {
 		fmt.Println("Received message from", addr, ":", string(msg))
 	}
 
-	if recvMsg.CommandName != "PlayerMove" {
+	if recvMsg.CommandName != "" {
 		logData := LogMessage{
-			Timestamp:       time.Now().In(timezone),
+			Timestamp:       time.Now(),
 			MapId:           UserMapid[recvMsg.SendUserId],
 			Message:         recvMsg,
 			OriginalMessage: msg,
@@ -108,11 +108,14 @@ func HandleRequest(conn *net.UDPConn, addr *net.UDPAddr, msg string) {
 
 		listenerResult, listenerMsg := ListenerMap[recvMsg.CommandName](conn, recvMsg, strAddr)
 
-		if (recvMsg.CommandName == "AssetCreate") || (recvMsg.CommandName == "AssetDelete") {
+		if (recvMsg.CommandName == "AssetCreate") || (recvMsg.CommandName == "AssetDelete") || (recvMsg.CommandName == "AssetSelect") || (recvMsg.CommandName == "AssetDeselect") || (recvMsg.CommandName == "MapReady") {
 			fmt.Println(listenerMsg)
 		}
 
-		if listenerResult && recvMsg.CommandName != "MapReady" {
+		if listenerResult {
+			if recvMsg.CommandName == "MapReady" {
+				return
+			}
 			// fmt.Printf("User [%s] : Map [%s]\n\n", recvMsg.SendUserId, UserMapid[recvMsg.SendUserId])
 			broadcast(conn, recvMsg.SendUserId, msg, includeSendUserCheck(recvMsg.CommandName))
 		} else {
@@ -193,7 +196,7 @@ func errorReturn(conn *net.UDPConn, sendUserId string, originalMessage string) {
 	} else {
 		go conn.WriteToUDP([]byte(originalMessage+";f"), udpAddr)
 	}
-	fmt.Println(aurora.Yellow("BroadCast Skipped\n"))
+	fmt.Println(aurora.Sprintf(aurora.Yellow("BroadCast Skipped : %s\n"), originalMessage))
 }
 
 /*

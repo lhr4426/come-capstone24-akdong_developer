@@ -5,7 +5,7 @@ import (
 	"asset_http_go/models"
 	"asset_http_go/responses"
 	"context"
-	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -57,7 +57,7 @@ func CreateAsset() gin.HandlerFunc {
 			return
 		}
 
-		fmt.Println("4@@@@@@@@@@@@@@@@")
+		log.Println("CreateAsset Log")
 		//c.JSON(http.StatusCreated, responses.AssetResponse{Code: 1, Message: "success"})
 		c.JSON(http.StatusCreated, responses.AssetResponse{Code: 1, Message: "Asset created successfully"})
 		// c.JSON(http.StatusCreated, responses.AssetResponse{Status: http.StatusCreated, Message: "success", Data: map[string]interface{}{"data": result}})
@@ -119,6 +119,7 @@ func GetAsset() gin.HandlerFunc {
 			c.JSON(http.StatusOK, responses.AssetResponse{Code: 1, Message: "Success, but no assets found matching the criteria", Data: results})
 		} else {
 			c.JSON(http.StatusOK, responses.AssetResponse{Code: 1, Message: "Assets retrieved successfully", Data: results})
+			log.Println("GetAsset Log")
 		}
 	}
 }
@@ -176,6 +177,7 @@ func SearchAsset() gin.HandlerFunc {
 			c.JSON(http.StatusOK, responses.AssetResponse{Code: 1, Message: "Success, but no assets found matching the criteria", Data: results})
 		} else {
 			c.JSON(http.StatusOK, responses.AssetResponse{Code: 1, Message: "Assets retrieved successfully", Data: results})
+			log.Println("SearchAsset Log")
 		}
 	}
 }
@@ -228,6 +230,7 @@ func DownThumbnail() gin.HandlerFunc {
 			c.JSON(http.StatusOK, responses.AssetResponse{Code: 1, Message: "Success, but no assets found matching the criteria", Data: results})
 		} else {
 			c.JSON(http.StatusOK, responses.AssetResponse{Code: 1, Message: "Assets retrieved successfully", Data: results})
+			log.Println("DownThumbnail Log")
 		}
 	}
 }
@@ -279,6 +282,7 @@ func DownAsset() gin.HandlerFunc {
 			c.JSON(http.StatusOK, responses.AssetResponse{Code: 1, Message: "Success, but no assets found matching the criteria", Data: results})
 		} else {
 			c.JSON(http.StatusOK, responses.AssetResponse{Code: 1, Message: "Assets retrieved successfully", Data: results})
+			log.Println("DownAsset Log")
 		}
 	}
 }
