@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:latest
+    container_name: game_mongo
+    ports:
+      - "27014:27014"
+    volumes:
+      - mongo-data:/data/db
+    command: ["mongod", "--port", "27014"]
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: game
+    depends_on:
+      - mongo
+    environment:
+      - MONGO_URI=${MONGO_URI}
+    ports:
+      - "8050:8050"
+    volumes:
+      - ./game_udp_go:/server_game
+
+volumes:
+  mongo-data:
