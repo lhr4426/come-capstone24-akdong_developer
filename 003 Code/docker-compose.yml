@@ -5,9 +5,10 @@ services:
     image: mongo:latest
     container_name: asset_mongo
     ports:
-      - "27017:27017"
+      - "27015:27015"
     volumes:
       - mongo-data:/data/db
+    command: ["mongod", "--port", "27015"]
 
   app:
     build:
