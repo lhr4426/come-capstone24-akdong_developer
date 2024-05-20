@@ -45,8 +45,9 @@ func GetMap() gin.HandlerFunc {
 
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
-				log.Println("(info)NoDocumentsErr :",err)
+				
 				c.JSON(http.StatusNotFound, responses.MapResponse{Code: 0, Message: "No documents found"})
+				log.Println("(info)NoDocumentsErr :",err)
 				return
 			}
 			c.JSON(http.StatusInternalServerError, responses.MapResponse{Code: 0, Message: err.Error()})
@@ -62,8 +63,9 @@ func GetMap() gin.HandlerFunc {
 			}
 		}
 
-		log.Println("(info)InfoSuccess :",mapId)
+		
 		// 데이터 반환
 		c.JSON(http.StatusOK, responses.MapResponse_map{Code: 1, Message: filtermapinfo}) // 형변환
+		log.Println("(info)InfoSuccess :",mapId)
 	}
 }

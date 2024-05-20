@@ -35,8 +35,9 @@ func Get_time() gin.HandlerFunc {
 
 		cursor, err := mapCollection.Find(ctx, filter, options.Find().SetProjection(projection))
 		if err != nil {
-			log.Println("(time)FindErr :", err)
+			
 			c.JSON(http.StatusInternalServerError, responses.MapResponse{Code: 0, Message: "error"})
+			log.Println("(time)FindErr :", err)
 			return
 		}
 
@@ -44,15 +45,17 @@ func Get_time() gin.HandlerFunc {
 
 		var results []bson.M
 		if err = cursor.All(ctx, &results); err != nil {
-			log.Println("(time)ReturnErr :", err)
+			
 			c.JSON(http.StatusInternalServerError, responses.MapResponse{Code: 0, Message: "error"})
+			log.Println("(time)ReturnErr :", err)
 			return
 		}
 
 		// 결과가 없으면 에러 반환
 		if len(results) == 0 {
-			log.Println("(time)NoDataErr :", err)
+			
 			c.JSON(http.StatusNotFound, responses.MapResponse{Code: 0, Message: "No data found"})
+			log.Println("(time)NoDataErr :", err)
 			return
 		}
 
@@ -60,8 +63,9 @@ func Get_time() gin.HandlerFunc {
 		str_results := results[0]["mapCTime"].(string)
 
 		// JSON으로 변환된 시간 반환
-		log.Println("(time)Success :", mapId)
+		
 		c.JSON(http.StatusOK, responses.MapResponse{Code: 1, Message: str_results})
+		log.Println("(time)Success :", mapId)
 
 	}
 

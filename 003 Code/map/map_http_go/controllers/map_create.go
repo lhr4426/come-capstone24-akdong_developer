@@ -31,8 +31,8 @@ func CreateMap() gin.HandlerFunc {
 
 		//body 유효성 검증
 		if err := c.BindJSON(&mapdata); err != nil {
-			log.Println("(create)BindJsonErr :", err)
 			c.JSON(http.StatusBadRequest, responses.MapResponse{Code: 0, Message: "body error"})
+			log.Println("(create)BindJsonErr :", err)
 			return
 		}
 
