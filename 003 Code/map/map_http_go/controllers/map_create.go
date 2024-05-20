@@ -66,16 +66,19 @@ func CreateMap() gin.HandlerFunc {
 			if err == mongo.ErrNoDocuments {
 				_, err := mapCollection.InsertOne(ctx, mapdata) // DB에 바로 저장
 				if err != nil {
-					log.Println("(create)InsertErr :", err)
+					
 					c.JSON(http.StatusInternalServerError, responses.MapResponse{Code: 0, Message: "insert error"})
+					log.Println("(create)InsertErr :", err)
 					return
 				}
-				log.Println("Insert Success :", mapId)
+				
 				c.JSON(http.StatusCreated, responses.MapResponse{Code: 1, Message: "insert success"})
+				log.Println("Insert Success :", mapId)
 				return
 			} else {
-				log.Println("(create)ExistInsertErr :", err)
+				
 				c.JSON(http.StatusInternalServerError, responses.MapResponse{Code: 0, Message: err.Error()})
+				log.Println("(create)ExistInsertErr :", err)
 				return
 			}
 		}
@@ -84,8 +87,9 @@ func CreateMap() gin.HandlerFunc {
 		// 모두 삭제(if chunkNum이 더 있으면)
 		_, err2 := mapCollection.ReplaceOne(ctx, filter, mapdata)
 		if err2 != nil {
-			log.Println("(create)UpdateErr :", err)
+			
 			c.JSON(http.StatusInternalServerError, responses.MapResponse{Code: 0, Message: "error"})
+			log.Println("(create)UpdateErr :", err)
 			return
 		}
 
@@ -103,12 +107,14 @@ func CreateMap() gin.HandlerFunc {
 
 		_, chk_err := mapCollection.DeleteMany(ctx, filterDelete)
 		if chk_err != nil {
-			log.Println("(create)DeleteErr :", chk_err)
+			
 			c.JSON(http.StatusInternalServerError, responses.MapResponse{Code: 0, Message: "delete err"})
+			log.Println("(create)DeleteErr :", chk_err)
 		}
 
-		log.Println("(create)Update Success :", mapId)
+		
 		c.JSON(http.StatusOK, responses.MapResponse{Code: 1, Message: "update success"})
+		log.Println("(create)Update Success :", mapId)
 
 	}
 }
