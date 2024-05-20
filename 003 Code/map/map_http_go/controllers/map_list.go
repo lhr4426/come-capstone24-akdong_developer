@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -40,6 +41,7 @@ func GetList() gin.HandlerFunc {
 		//cursor, err := mapCollection.Find(ctx, bson.M{}, options.Find().SetProjection(projection)) // rejection이랑 filter 정확하게 알기
 		cursor, err := mapCollection.Find(ctx, filter, options.Find().SetProjection(projection))
 		if err != nil {
+			log.Println("(list)FindErr :", err)
 			c.JSON(http.StatusInternalServerError, responses.MapResponse{Code: 0, Message: "error"})
 			return
 		}
@@ -49,11 +51,13 @@ func GetList() gin.HandlerFunc {
 		// cursor에서 반환된 모든 값을 가져와 map[string]interface{} 슬라이스로 변환
 		var results []map[string]interface{} // 여러개라서 []map[string]interface{}
 		if err = cursor.All(ctx, &results); err != nil {
+			log.Println("(list)FindReturnErr :", err)
 			c.JSON(http.StatusInternalServerError, responses.MapResponse{Code: 0, Message: "error"})
 			return
 		}
 
 		// JSON으로 결과 반환
+		log.Println("(list)Success")
 		c.JSON(http.StatusOK, responses.MapResponse_list{Code: 1, Message: results})
 	}
 }
