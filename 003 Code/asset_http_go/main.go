@@ -16,5 +16,5 @@ func main() {
 	// 라우트
 	routes.AssetRoute(router)
 
-	router.Run("0.0.0.0:8070")
+	router.Run("0.0.0.0:8080")
 }
