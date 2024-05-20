@@ -1,8 +1,10 @@
+
 package main
 
 import (
-	"capstone.com/configs"
-	"capstone.com/routes"
+	"map_http_go/configs"
+	"map_http_go/routes"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -14,6 +16,6 @@ func main() {
 
 	routes.MapRoute(router)
 
-	router.Run("0.0.0.0:8080")
+	router.Run("0.0.0.0:8070")
 
 }
