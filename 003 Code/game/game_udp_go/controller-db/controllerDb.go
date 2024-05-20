@@ -11,7 +11,7 @@ import (
 )
 
 func ConnectDB() {
-	clientOptions := options.Client().ApplyURI("mongodb://mongo:27015")
+	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
 	client, err := mongo.Connect(context.TODO(), clientOptions)
 	if err != nil {
 		fmt.Println(aurora.Sprintf(

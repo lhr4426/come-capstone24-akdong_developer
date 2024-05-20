@@ -145,7 +145,7 @@ func isCreator(userId string) bool {
 }
 
 func isAdmin(userId string) bool {
-	if userId == "abc" || userId == "abcd" {
+	if userId == "abc" || userId == "abcd" || userId == "abcde" {
 		return true
 	} else {
 		return false

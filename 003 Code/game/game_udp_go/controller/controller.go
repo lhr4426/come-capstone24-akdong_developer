@@ -106,12 +106,12 @@ func HandleRequest(conn *net.UDPConn, addr *net.UDPAddr, msg string) {
 
 	if ListenerMap[recvMsg.CommandName] != nil {
 
-		listenerResult, _ := ListenerMap[recvMsg.CommandName](conn, recvMsg, strAddr)
-		/*
-			if (recvMsg.CommandName == "AssetCreate") || (recvMsg.CommandName == "AssetDelete") {
-				// fmt.Println(listenerMsg)
-			}
-		*/
+		listenerResult, listenerMsg := ListenerMap[recvMsg.CommandName](conn, recvMsg, strAddr)
+
+		if (recvMsg.CommandName == "AssetCreate") || (recvMsg.CommandName == "AssetDelete") {
+			fmt.Println(listenerMsg)
+		}
+
 		if listenerResult && recvMsg.CommandName != "MapReady" {
 			// fmt.Printf("User [%s] : Map [%s]\n\n", recvMsg.SendUserId, UserMapid[recvMsg.SendUserId])
 			broadcast(conn, recvMsg.SendUserId, msg, includeSendUserCheck(recvMsg.CommandName))
@@ -137,7 +137,7 @@ func includeSendUserCheck(commandName string) bool {
 	case "PlayerJoin", "PlayerLeave", "AssetCreate", "AssetDelete":
 		return true
 
-	case "PlayerMove", "AssetMove":
+	case "PlayerMove", "AssetMove", "MapReady":
 		return false
 
 	}

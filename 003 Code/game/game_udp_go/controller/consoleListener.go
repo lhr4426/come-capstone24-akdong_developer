@@ -28,7 +28,7 @@ func ConsoleController(_conn *net.UDPConn) {
 		consoleInput, _ := reader.ReadString('\n')
 		// CRLF 해결하려고 -2 함
 		// 캐리지 리턴!!!!!!!!! 매우 중요함
-		consoleInputSplit := consoleInput[:len(consoleInput)]
+		consoleInputSplit := consoleInput[:len(consoleInput)-2]
 
 		inputSlice := strings.Fields(consoleInputSplit)
 
