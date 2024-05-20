@@ -17,13 +17,13 @@ func ConnectDB() *mongo.Client {
 	// MongoDB 연결
 	client, err := mongo.Connect(context.TODO(), clientOptions)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("mongo connect err :",err)
 	}
 
 	// 연결 확인
 	err = client.Ping(context.TODO(), nil)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("mongo ping err :", err)
 	}
 
 	fmt.Println("Connected to MongoDB!")
