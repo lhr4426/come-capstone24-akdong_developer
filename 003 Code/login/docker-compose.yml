@@ -12,7 +12,7 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
 
-  app:
+  server:
     build:
       context: .
       dockerfile: Dockerfile
