@@ -37,6 +37,7 @@ var ListenerMap = map[string]listeners{
 	"AssetSelect":   AssetSelect,
 	"AssetDeselect": AssetDeselect,
 	"MapReady":      MapReady,
+	"PlayerJump":    PlayerJump,
 }
 
 var DBClient *mongo.Database
@@ -72,14 +73,15 @@ func HandleRequest(conn *net.UDPConn, addr *net.UDPAddr, msg string) {
 				aurora.Yellow("Cannot Parsing Message : %s"), msg))
 		return
 	}
-
-	if recvMsg.CommandName == "MapReady" {
-		fmt.Println("Received message from", addr, ":", string(msg))
-	}
+	/*
+		if recvMsg.CommandName == "MapReady" {
+			fmt.Println("Received message from", addr, ":", string(msg))
+		}
+	*/
 
 	if recvMsg.CommandName != "" {
 		logData := LogMessage{
-			Timestamp:       time.Now(),
+			Timestamp:       time.Now().UTC(),
 			MapId:           UserMapid[recvMsg.SendUserId],
 			Message:         recvMsg,
 			OriginalMessage: msg,
@@ -140,7 +142,7 @@ func includeSendUserCheck(commandName string) bool {
 	case "PlayerJoin", "PlayerLeave", "AssetCreate", "AssetDelete":
 		return true
 
-	case "PlayerMove", "AssetMove", "MapReady":
+	case "PlayerMove", "AssetMove", "MapReady", "PlayerJump":
 		return false
 
 	}

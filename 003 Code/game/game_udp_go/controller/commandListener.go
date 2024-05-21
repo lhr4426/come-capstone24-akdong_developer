@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/logrusorgru/aurora"
@@ -55,7 +56,7 @@ func ItemUnlock(userId string, itemId string) {
 	}
 
 	delete(LockObjUser, itemId)
-
+	fmt.Printf("Item [%s] Unlocked", itemId)
 }
 
 func isLocked(userId string, itemId string) bool {
@@ -83,7 +84,7 @@ func otherMessageLengthCheck(commandName string, messageLength int) bool {
 		return messageLength == 2
 	case "AssetDelete", "AssetSelect", "AssetDeselect":
 		return messageLength == 1
-	case "PlayerLeave", "MapReady":
+	case "PlayerLeave", "MapReady", "PlayerJump":
 		return messageLength == 0
 	}
 	return false
@@ -227,7 +228,8 @@ func PlayerJoin(conn *net.UDPConn, m ReceiveMessage, addr string) (bool, string)
 func MapReady(conn *net.UDPConn, m ReceiveMessage, addr string) (bool, string) {
 	// MapReady 메시지 형태 :
 	// MapReady$sendUserId;SendTime;
-	fmt.Printf("MapReady Start\n")
+
+	// fmt.Printf("MapReady Start\n")
 	if otherMessageLengthCheck(m.CommandName, len(m.OtherMessage)) {
 		_, isUserAddrExists := UserAddr[m.SendUserId]
 
@@ -252,7 +254,7 @@ func MapReady(conn *net.UDPConn, m ReceiveMessage, addr string) (bool, string) {
 // TODO : 유정이 답장오면 만들기
 func SendBeforeLog(mapid string, userId string, result chan bool) {
 	mapSaveTimeString := controllerhttp.GetMapTime(mapid)
-	mapSaveTime, err := time.Parse(time.RFC3339, mapSaveTimeString.Message)
+	mapSaveTime, err := time.Parse(time.RFC3339Nano, mapSaveTimeString.Message)
 	if err != nil {
 		fmt.Println(aurora.Sprintf(aurora.Red("Error in Parsing Saved Time : %s"), err))
 		result <- false
@@ -271,9 +273,9 @@ func SendBeforeLog(mapid string, userId string, result chan bool) {
 	}
 
 	for _, logOne := range logResult {
-		fmt.Printf("Log : %s\n", logOne.OriginalMessage)
+		// fmt.Printf("Log : %s\n", logOne.OriginalMessage)
 		conn.WriteToUDP([]byte(logOne.OriginalMessage+";s"), udpAddr)
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(50 * time.Millisecond)
 	}
 	result <- true
 }
@@ -282,9 +284,18 @@ func FindDocumentsAfterTime(parsedTimeFromMaptime time.Time, mapid string) ([]Lo
 	collection := DBClient.Collection("log")
 
 	fmt.Printf("Find start\n\n")
+	currentTime := time.Now().UTC()
+	// fmt.Printf("Parsed Time : %s\nCurrent Time : %s\nTime Duration : %f\n", parsedTimeFromMaptime, currentTime, currentTime.Sub(parsedTimeFromMaptime).Seconds())
+
+	// fmt.Printf("Parsed Time : %s\nCurrent Time : %s\n", strconv.FormatInt(parsedTimeFromMaptime.UnixMilli(), 10), strconv.FormatInt(currentTime.UnixMilli(), 10))
+
 	filter := bson.M{
-		"timestamp": bson.M{"$gt": parsedTimeFromMaptime},
-		"mapid":     mapid,
+		"timestamp": bson.M{
+			"$gt": parsedTimeFromMaptime,
+			"$lt": currentTime,
+		},
+		"mapid":           mapid,
+		"originalmessage": bson.M{"$regex": "^Asset"},
 	}
 
 	cursor, err := collection.Find(context.TODO(), filter)
@@ -294,7 +305,7 @@ func FindDocumentsAfterTime(parsedTimeFromMaptime time.Time, mapid string) ([]Lo
 	defer cursor.Close(context.TODO())
 
 	var results []LogResponseData
-	fmt.Printf("Next Cursor Start\n")
+	// fmt.Printf("Next Cursor Start\n")
 	for cursor.Next(context.TODO()) {
 		var elem LogResponseData
 		err := cursor.Decode(&elem)
@@ -302,7 +313,7 @@ func FindDocumentsAfterTime(parsedTimeFromMaptime time.Time, mapid string) ([]Lo
 			fmt.Printf("Error : %s\n", err)
 			return nil, err
 		}
-		fmt.Printf("LogResponseData : %s\n", elem.OriginalMessage)
+		// fmt.Printf("LogResponseData : %s\n", elem.OriginalMessage)
 		results = append(results, elem)
 	}
 	if err := cursor.Err(); err != nil {
@@ -352,6 +363,29 @@ func PlayerLeave(conn *net.UDPConn, m ReceiveMessage, addr string) (bool, string
 				for _, item := range lockedList {
 					if LockObjUser[item] == m.SendUserId {
 						ItemUnlock(m.SendUserId, item)
+
+						unlockMessage := "AssetDeselect$" + m.SendUserId + ";" + strconv.FormatInt(time.Now().UnixMilli(), 10) + ";" + item
+
+						fmt.Printf("Unlock Message : %s\n", unlockMessage)
+
+						structUnlockMessage, err := MessageParser(unlockMessage)
+
+						if !err {
+							fmt.Printf("unlock message parsing error\n")
+							return false, aurora.Sprintf(aurora.Yellow("Error : Cannot Parsing Unlock Message"))
+						}
+
+						logData := LogMessage{
+							Timestamp:       time.Now().UTC(),
+							MapId:           userMapid,
+							Message:         structUnlockMessage,
+							OriginalMessage: unlockMessage,
+						}
+
+						_, insertErr := DBClient.Collection("log").InsertOne(context.TODO(), logData)
+						if insertErr != nil {
+							fmt.Printf("insert result : %s\n", insertErr)
+						}
 					}
 				}
 			}
@@ -526,5 +560,19 @@ func AssetDeselect(conn *net.UDPConn, m ReceiveMessage, addr string) (bool, stri
 		}
 	} else {
 		return false, aurora.Sprintf(aurora.Yellow("Error : AssetSelect Message Length Error : need 1, received %d"), len(m.OtherMessage))
+	}
+}
+
+func PlayerJump(conn *net.UDPConn, m ReceiveMessage, addr string) (bool, string) {
+	// PlayerJump 형태 :
+	// PlayerJump$SendUserId;SendTime
+	// otherMessage length : 0
+
+	// 보낸 유저가 있는 유저면 return true
+	// 딱히 더 할 작업은 없음
+	if isUserExists(m.SendUserId, addr) {
+		return true, aurora.Sprintf(aurora.Green("Success : User [%s] Jump\n"), m.SendUserId)
+	} else {
+		return false, aurora.Sprintf(aurora.Yellow("Error : Cannot Found User [%s]"), m.SendUserId)
 	}
 }

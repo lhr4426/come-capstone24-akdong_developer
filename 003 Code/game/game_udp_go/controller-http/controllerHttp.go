@@ -41,8 +41,8 @@ func HttpGet(url string) []byte {
 	}
 
 	// 응답 상태 코드 및 본문 출력
-	fmt.Printf("Response status code: %d\n", response.StatusCode)
-	fmt.Printf("Response body: %s\n", body)
+	// fmt.Printf("Response status code: %d\n", response.StatusCode)
+	// fmt.Printf("Response body: %s\n", body)
 
 	return body
 }
