@@ -29,12 +29,14 @@ func CreateAsset() gin.HandlerFunc {
 		//validate the request body
 		if err := c.BindJSON(&asset); err != nil {
 			c.JSON(http.StatusBadRequest, responses.AssetResponse{Code: 0, Message: "Request validation failed: " + err.Error()})
+			log.Println("(create)BindJsonErr :", err)
 			return
 		}
 
 		//use the validator library to validate required fields
 		if validationErr := validate.Struct(&asset); validationErr != nil {
 			c.JSON(http.StatusBadRequest, responses.AssetResponse{Code: 0, Message: "Validation error: " + validationErr.Error()})
+			log.Println("(create)BindJsonValidation error :")
 			return
 		}
 
@@ -53,11 +55,12 @@ func CreateAsset() gin.HandlerFunc {
 
 		// result, err := assetCollection.InsertOne(ctx, newAsset)
 		if _, err := assetCollection.InsertOne(ctx, newAsset); err != nil {
+			log.Println("Database insertion error :", err)
 			c.JSON(http.StatusInternalServerError, responses.AssetResponse{Code: 0, Message: "Database insertion error: " + err.Error()})
 			return
 		}
 
-		log.Println("CreateAsset Log")
+		log.Println("Create New Asset :", newAsset)
 		//c.JSON(http.StatusCreated, responses.AssetResponse{Code: 1, Message: "success"})
 		c.JSON(http.StatusCreated, responses.AssetResponse{Code: 1, Message: "Asset created successfully"})
 		// c.JSON(http.StatusCreated, responses.AssetResponse{Status: http.StatusCreated, Message: "success", Data: map[string]interface{}{"data": result}})
@@ -77,6 +80,7 @@ func GetAsset() gin.HandlerFunc {
 		if id != "" {
 			objID, err := primitive.ObjectIDFromHex(id) // 문자열 ID를 ObjectID로 변환
 			if err != nil {
+				log.Println("Invalid ID format :", err)
 				c.JSON(http.StatusBadRequest, gin.H{"code": 0, "message": "Invalid ID format"})
 				return
 			}
@@ -85,6 +89,7 @@ func GetAsset() gin.HandlerFunc {
 
 		cur, err := assetCollection.Find(ctx, filter)
 		if err != nil {
+			log.Println("Database query failed :", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"code": 0, "message": "Database query failed"})
 			return
 		}
@@ -111,15 +116,17 @@ func GetAsset() gin.HandlerFunc {
 		}
 
 		if err := cur.Err(); err != nil {
+			log.Println("Error reading from database :", err)
 			c.JSON(http.StatusInternalServerError, responses.AssetResponse{Code: 0, Message: "Error reading from database: " + err.Error()})
 			return
 		}
 
 		if len(results) == 0 {
+			log.Println("Success, but no assets found matching :", results)
 			c.JSON(http.StatusOK, responses.AssetResponse{Code: 1, Message: "Success, but no assets found matching the criteria", Data: results})
 		} else {
+			log.Println("Success, asset_info :", results)
 			c.JSON(http.StatusOK, responses.AssetResponse{Code: 1, Message: "Assets retrieved successfully", Data: results})
-			log.Println("GetAsset Log")
 		}
 	}
 }
@@ -141,6 +148,7 @@ func SearchAsset() gin.HandlerFunc {
 		if categoryidStr != "" {
 			categoryid, err := strconv.Atoi(categoryidStr) // 문자열을 정수로 변환
 			if err != nil {
+				log.Println("Invalid category ID :", err)
 				c.JSON(http.StatusBadRequest, gin.H{"code": 0, "message": "Invalid category ID"})
 				return
 			}
@@ -149,6 +157,7 @@ func SearchAsset() gin.HandlerFunc {
 
 		cur, err := assetCollection.Find(ctx, filter)
 		if err != nil {
+			log.Println("Database query failed :", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"code": 0, "message": "Database query failed"})
 			return
 		}
@@ -169,15 +178,17 @@ func SearchAsset() gin.HandlerFunc {
 		}
 
 		if err := cur.Err(); err != nil {
+			log.Println("Database query failed :", err)
 			c.JSON(http.StatusInternalServerError, responses.AssetResponse{Code: 0, Message: "Error reading from database: " + err.Error()})
 			return
 		}
 
 		if len(results) == 0 {
+			log.Println("Success, but no assets found matching the criteria :", results)
 			c.JSON(http.StatusOK, responses.AssetResponse{Code: 1, Message: "Success, but no assets found matching the criteria", Data: results})
 		} else {
+			log.Println("Success, asset_search :", results)
 			c.JSON(http.StatusOK, responses.AssetResponse{Code: 1, Message: "Assets retrieved successfully", Data: results})
-			log.Println("SearchAsset Log")
 		}
 	}
 }
@@ -195,6 +206,7 @@ func DownThumbnail() gin.HandlerFunc {
 		if id != "" {
 			objID, err := primitive.ObjectIDFromHex(id) // 문자열 ID를 ObjectID로 변환
 			if err != nil {
+				log.Println("Invalid ID format :", err)
 				c.JSON(http.StatusBadRequest, gin.H{"code": 0, "message": "Invalid ID format"})
 				return
 			}
@@ -203,6 +215,7 @@ func DownThumbnail() gin.HandlerFunc {
 
 		cur, err := assetCollection.Find(ctx, filter)
 		if err != nil {
+			log.Println("Database query failed :", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"code": 0, "message": "Database query failed"})
 			return
 		}
@@ -222,15 +235,17 @@ func DownThumbnail() gin.HandlerFunc {
 		}
 
 		if err := cur.Err(); err != nil {
+			log.Println("Error reading from database :", err)
 			c.JSON(http.StatusInternalServerError, responses.AssetResponse{Code: 0, Message: "Error reading from database: " + err.Error()})
 			return
 		}
 
 		if len(results) == 0 {
+			log.Println("Success, but no assets found matching :", results)
 			c.JSON(http.StatusOK, responses.AssetResponse{Code: 1, Message: "Success, but no assets found matching the criteria", Data: results})
 		} else {
+			log.Println("Success, DownThumbnail :", results)
 			c.JSON(http.StatusOK, responses.AssetResponse{Code: 1, Message: "Assets retrieved successfully", Data: results})
-			log.Println("DownThumbnail Log")
 		}
 	}
 }
@@ -248,6 +263,7 @@ func DownAsset() gin.HandlerFunc {
 		if id != "" {
 			objID, err := primitive.ObjectIDFromHex(id) // 문자열 ID를 ObjectID로 변환
 			if err != nil {
+				log.Println("Invalid ID format :", err)
 				c.JSON(http.StatusBadRequest, gin.H{"code": 0, "message": "Invalid ID format"})
 				return
 			}
@@ -256,6 +272,7 @@ func DownAsset() gin.HandlerFunc {
 
 		cur, err := assetCollection.Find(ctx, filter)
 		if err != nil {
+			log.Println("Database query failed :", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"code": 0, "message": "Database query failed"})
 			return
 		}
@@ -274,15 +291,17 @@ func DownAsset() gin.HandlerFunc {
 		}
 
 		if err := cur.Err(); err != nil {
+			log.Println("Error reading from database :", err)
 			c.JSON(http.StatusInternalServerError, responses.AssetResponse{Code: 0, Message: "Error reading from database: " + err.Error()})
 			return
 		}
 
 		if len(results) == 0 {
+			log.Println("Success, but no assets found matching :", results)
 			c.JSON(http.StatusOK, responses.AssetResponse{Code: 1, Message: "Success, but no assets found matching the criteria", Data: results})
 		} else {
+			log.Println("Success, DownAsset :", results)
 			c.JSON(http.StatusOK, responses.AssetResponse{Code: 1, Message: "Assets retrieved successfully", Data: results})
-			log.Println("DownAsset Log")
 		}
 	}
 }
