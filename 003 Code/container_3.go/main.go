@@ -19,36 +19,48 @@ import (
 
 func buildImage() error {
 	
-	fmt.Println("-------- Start Build --------")
+	fmt.Println("----------------------- Start Build -----------------------")
 	err := os.MkdirAll("/Carte/rootfs", 0755)
 	if err != nil{
 		return err
 	}
+
+	fmt.Println("@@@@")
 
 	// bin/bash, bin/ls 파일로 입력 진행 --> 추후에 login server 파일 넣는거(경로 바꿔서) 해보기, golang 연관성 및 의존성 생각해봐야됨
 	var imagepath string
 
 	ct_build_iput := 1
 	for {
+		fmt.Println("####")
 		if ct_build_iput == 0 {
 			break
 		}
-		fmt.Scanf("input your filepath : %s", &imagepath)
+		fmt.Print("input your filepath: ")
+		_, err := fmt.Scanf("%s", &imagepath)
+		if err != nil{
+			return err
+		}
+
 		err = copyFile(imagepath, "/Carte/rootfs/")
 		if err != nil{
 			return err
 		}
 
-		fmt.Scanf("(if you continue please input 1, else input 0), input : %d", &ct_build_iput)
+		fmt.Print("(if you continue please input 1, else input 0), input : ")
+		_, err = fmt.Scanf("%d", &ct_build_iput)
+		if err != nil {
+			return err
+		}
 	}
 	
-	fmt.Println("-------- Start image create --------")
+	fmt.Println("----------------------- Start image create -----------------------")
 	err = createImage("/Carte/rootfs", "/Carte/image.tar")
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("-------- Image Build Complet --------")
+	fmt.Println("---------------------- Image Build Complete ----------------------")
 	return nil
 }
 
