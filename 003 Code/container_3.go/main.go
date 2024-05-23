@@ -25,14 +25,11 @@ func buildImage() error {
 		return err
 	}
 
-	fmt.Println("@@@@")
-
 	// bin/bash, bin/ls 파일로 입력 진행 --> 추후에 login server 파일 넣는거(경로 바꿔서) 해보기, golang 연관성 및 의존성 생각해봐야됨
 	var imagepath string
 
 	ct_build_iput := 1
 	for {
-		fmt.Println("####")
 		if ct_build_iput == 0 {
 			break
 		}
@@ -77,6 +74,10 @@ func createImage(srcDir, dstFile string) error {
 }
 
 // 2) 명령어로 container 생성하기[carte container run]
+func runContainer() error {
+	fmt.Println("----------------------- Start Create Container -----------------------")
+	return nil
+}
 
 // 2_1) 실행 container 확인하기(carte cotainer ps)
 
@@ -92,6 +93,14 @@ func main() {
 		err := buildImage()
 		if err != nil {
 			fmt.Println("Error building image:", err)
+			return
+		}
+	}
+
+	if procedure == "Carte_Create_Container" {
+		err := runContainer()
+		if err != nil {
+			fmt.Println("Error create container:", err)
 			return
 		}
 	}
