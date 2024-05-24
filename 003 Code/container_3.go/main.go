@@ -39,7 +39,9 @@ func buildImage() error {
 			return err
 		}
 
-		err = copyFile(imagepath, "/Carte/rootfs/")
+		// only file copy --> 
+		// Carte(run), need exe? , no set main.go , auto input carte ,
+		err = copyFile(imagepath, "/Carte/rootfs")
 		if err != nil{
 			return err
 		}
@@ -63,7 +65,7 @@ func buildImage() error {
 
 // 파일 복사 함수
 func copyFile(src, dst string) error {
-	cmd := exec.Command("cp", src, dst)
+	cmd := exec.Command("cp -r", src, dst)
 	return cmd.Run()
 }
 
