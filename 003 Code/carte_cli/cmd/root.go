@@ -94,4 +94,3 @@ func initConfig() {
     fmt.Println("Using config file:", viper.ConfigFileUsed())
   }
 }
-
