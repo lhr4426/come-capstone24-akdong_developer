@@ -1,0 +1,6 @@
+WORKDIR /test
+
+COPY ./testdir /test
+
+# main.go 파일을 직접 실행
+CMD ["go", "run", "/test/main.go"]

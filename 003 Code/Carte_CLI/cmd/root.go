@@ -6,7 +6,7 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-    Use:   "carte",
+    Use:   "Carte",
     Short: "Carte is a CLI tool",
     Long:  `Carte is a CLI tool for various tasks.`,
 }
