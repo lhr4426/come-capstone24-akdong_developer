@@ -1,0 +1,2 @@
+imagetest.tar.gz
+./testdir
