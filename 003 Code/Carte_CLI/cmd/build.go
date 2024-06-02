@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	//"path/filepath"
-	// "strings"
+	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -38,16 +38,32 @@ func buildImage() error {
 	}
 
 	// 파일에서 경로를 읽어오기
-	file, err := os.Open("paths.txt")
+	file, err := os.Open("Cartefile.txt")
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	var imagePaths []string
 	scanner := bufio.NewScanner(file)
+
+	var tarFileName string
+	var imagePaths []string
+	
 	for scanner.Scan() {
-		imagePaths = append(imagePaths, scanner.Text())
+		line := scanner.Text()
+		if strings.HasPrefix(line, "NAME "){
+			tarFileName = strings.TrimSpace(strings.TrimPrefix(line, "NAME "))
+		} else if strings.HasPrefix(line, "PATH ") {
+			imagePaths = append(imagePaths, strings.TrimSpace(strings.TrimPrefix(line, "PATH ")))
+		}
+	}
+
+	if tarFileName == "" {
+		return fmt.Errorf("Tar file name is missing in Cartefile.txt")
+	}
+
+	if len(imagePaths) == 0 {
+		return fmt.Errorf("No directories specified in Cartefile.txt")
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -55,7 +71,9 @@ func buildImage() error {
 	}
 
 	// 모든 디렉토리를 하나의 tar.gz 파일로 압축
-	err = createImage(imagePaths, "/Carte/image.tar.gz")
+	imageFilePath := "/Carte/images/" + tarFileName
+	err = createImage(imagePaths, imageFilePath)
+	// err = createImage(imagePaths, filepath.Join(os.Getenv("HOME"), "Carte", "images", tarFileName))
 	if err != nil {
 		return err
 	}
@@ -68,7 +86,11 @@ func buildImage() error {
 func createImage(srcDirs []string, dstFile string) error {
 	args := []string{"-czvf", dstFile}
 	for _, srcDir := range srcDirs {
-		args = append(args, "-C", srcDir, ".")
+		absPath, err := filepath.Abs(srcDir)
+		if err != nil {
+			return err
+		}
+		args = append(args, "-C", filepath.Dir(absPath), filepath.Base(absPath))
 	}
 	cmd := exec.Command("tar", args...)
 	cmd.Stdout = os.Stdout
