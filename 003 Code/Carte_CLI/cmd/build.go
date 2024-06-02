@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"io"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -27,12 +28,13 @@ func init() {
 // 수정할부분
 // 1. 파일 입력(scanf) 부분으로 하지 말고 file내에서 읽어오도록 하기 -> 원하는 경로 복사, 디렉토리 이름 설정 ==> 이미지 압축 생성
 // --- file 경로 완료, 해당 폴더 상위에서 Carte build 하면 원하는 경로로 압축 완료(o)
-// --- 폴더 이름 설정 필요 (paths.txt)  (x)
+// --- 폴더 이름 설정 필요 (paths.txt)  (o)
 // 1-2. 파일 압축 : 하나씩 (파일)압축말고 디렉토리 전체 압축(o)
-// 2. 권한 문제(컨테이너 생성하기 위한 이미지 생성이 관리자 권한을 요구로 함)
+// 2. 권한 문제(컨테이너 생성하기 위한 이미지 생성이 관리자 권한을 요구로 함) (x)
 func buildImage() error {
 	fmt.Println("----------------------- Start Build -----------------------")
-	err := os.MkdirAll("/Carte/images", 0755)
+	baseDir := "/Carte/images"
+	err := os.MkdirAll(baseDir, 0755)
 	if err != nil {
 		return err
 	}
@@ -46,34 +48,47 @@ func buildImage() error {
 
 	scanner := bufio.NewScanner(file)
 
-	var tarFileName string
-	var imagePaths []string
-	
+	var name string
+	var srcPath string
+
 	for scanner.Scan() {
 		line := scanner.Text()
-		if strings.HasPrefix(line, "NAME "){
-			tarFileName = strings.TrimSpace(strings.TrimPrefix(line, "NAME "))
+		if strings.HasPrefix(line, "NAME ") {
+			name = strings.TrimSpace(strings.TrimPrefix(line, "NAME "))
 		} else if strings.HasPrefix(line, "PATH ") {
-			imagePaths = append(imagePaths, strings.TrimSpace(strings.TrimPrefix(line, "PATH ")))
+			srcPath = strings.TrimSpace(strings.TrimPrefix(line, "PATH "))
 		}
 	}
 
-	if tarFileName == "" {
-		return fmt.Errorf("Tar file name is missing in Cartefile.txt")
+	if name == "" {
+		return fmt.Errorf("Name is missing in Cartefile.txt")
 	}
 
-	if len(imagePaths) == 0 {
-		return fmt.Errorf("No directories specified in Cartefile.txt")
+	if srcPath == "" {
+		return fmt.Errorf("Path is missing in Cartefile.txt")
 	}
 
 	if err := scanner.Err(); err != nil {
 		return err
 	}
 
-	// 모든 디렉토리를 하나의 tar.gz 파일로 압축
-	imageFilePath := "/Carte/images/" + tarFileName
-	err = createImage(imagePaths, imageFilePath)
-	// err = createImage(imagePaths, filepath.Join(os.Getenv("HOME"), "Carte", "images", tarFileName))
+	// 타겟 디렉토리 경로 설정
+	targetDir := filepath.Join(baseDir, name)
+	err = os.MkdirAll(targetDir, 0755)
+	if err != nil {
+		return err
+	}
+
+	// 디렉토리 내용을 타겟 디렉토리에 복사
+	err = copyDirectoryContents(srcPath, targetDir)
+	if err != nil {
+		return err
+	}
+
+	// 타겟 디렉토리를 tar.gz 파일로 압축
+	tarFileName := name + ".tar.gz"
+	tarFilePath := filepath.Join(baseDir, tarFileName)
+	err = createImage(targetDir, tarFilePath)
 	if err != nil {
 		return err
 	}
@@ -82,18 +97,61 @@ func buildImage() error {
 	return nil
 }
 
-// 이미지 생성 함수
-func createImage(srcDirs []string, dstFile string) error {
-	args := []string{"-czvf", dstFile}
-	for _, srcDir := range srcDirs {
-		absPath, err := filepath.Abs(srcDir)
+// 디렉토리 내용을 복사하는 함수
+func copyDirectoryContents(srcDir, dstDir string) error {
+	return filepath.Walk(srcDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		args = append(args, "-C", filepath.Dir(absPath), filepath.Base(absPath))
+
+		relPath, err := filepath.Rel(srcDir, path)
+		if err != nil {
+			return err
+		}
+
+		targetPath := filepath.Join(dstDir, relPath)
+
+		if info.IsDir() {
+			return os.MkdirAll(targetPath, info.Mode())
+		}
+
+		return copyFile(path, targetPath)
+	})
+}
+
+// 파일 복사 함수
+func copyFile(srcFile, dstFile string) error {
+	src, err := os.Open(srcFile)
+	if err != nil {
+		return err
 	}
+	defer src.Close()
+
+	dst, err := os.Create(dstFile)
+	if err != nil {
+		return err
+	}
+	defer dst.Close()
+
+	_, err = io.Copy(dst, src)
+	if err != nil {
+		return err
+	}
+
+	info, err := os.Stat(srcFile)
+	if err != nil {
+		return err
+	}
+
+	return os.Chmod(dstFile, info.Mode())
+}
+
+// 이미지 생성 함수
+func createImage(srcDir, dstFile string) error {
+	args := []string{"-czvf", dstFile, "-C", srcDir, "."}
 	cmd := exec.Command("tar", args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
+

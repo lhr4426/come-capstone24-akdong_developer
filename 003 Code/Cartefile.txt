@@ -1,2 +1,2 @@
-NAME imagetest.tar.gz
+NAME imagetest
 PATH ./testdir
