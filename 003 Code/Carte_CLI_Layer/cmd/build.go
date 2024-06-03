@@ -15,7 +15,7 @@ import (
     "github.com/spf13/cobra"
 )
 
-// Metadata 구조체는 이미지 메타데이터를 저장합니다.
+// Metadata : 이미지 메타데이터 저장
 type Metadata struct {
     Name      string    `json:"name"`
     Timestamp time.Time `json:"timestamp"`
@@ -24,7 +24,6 @@ type Metadata struct {
     ExePath   string    `json:"exe_path"`
 }
 
-// buildCmd는 'build' 명령어를 정의합니다.
 var buildCmd = &cobra.Command{
     Use:   "build",
     Short: "Build command that handles image compression",
@@ -33,12 +32,11 @@ var buildCmd = &cobra.Command{
     },
 }
 
-// init 함수는 'build' 명령어를 루트 명령어에 추가합니다.
+// 'build' 명령어 루트 명령어에 추가
 func init() {
     rootCmd.AddCommand(buildCmd)
 }
 
-// buildImage 함수는 이미지를 빌드합니다.
 func buildImage() error {
     fmt.Println("----------------------- Start Build -----------------------")
 
@@ -145,7 +143,7 @@ func buildImage() error {
     return nil
 }
 
-// createLayer 함수는 소스 경로에서 타겟 디렉토리로 레이어를 생성합니다.
+// 소스 경로에서 타겟 디렉토리로 레이어를 생성
 func createLayer(srcPath, dstDir, excludePath string) error {
     info, err := os.Stat(srcPath)
     if err != nil {
@@ -160,7 +158,7 @@ func createLayer(srcPath, dstDir, excludePath string) error {
     return copySingleFile(srcPath, dstDir)
 }
 
-// copyDirectoryContents 함수는 디렉토리의 내용을 복사합니다.
+// 디렉토리의 내용 복사
 func copyDirectoryContents(srcDir, dstDir, excludePath string) error {
     absExcludePath, err := filepath.Abs(excludePath)
     if err != nil {
@@ -196,7 +194,7 @@ func copyDirectoryContents(srcDir, dstDir, excludePath string) error {
     })
 }
 
-// copySingleFile 함수는 단일 파일을 복사합니다.
+// 단일 파일 복사
 func copySingleFile(srcFile, dstDir string) error {
     err := os.MkdirAll(dstDir, 0755)
     if err != nil {
@@ -207,7 +205,7 @@ func copySingleFile(srcFile, dstDir string) error {
     return copyFile(srcFile, dstFile)
 }
 
-// copyFile 함수는 파일을 복사합니다.
+// 파일 복사
 func copyFile(srcFile, dstFile string) error {
     src, err := os.Open(srcFile)
     if err != nil {
@@ -234,7 +232,7 @@ func copyFile(srcFile, dstFile string) error {
     return os.Chmod(dstFile, info.Mode())
 }
 
-// createImage 함수는 디렉토리를 tar.gz 파일로 압축합니다.
+// 디렉토리 tar.gz 파일로 압축
 func createImage(srcDir, dstFile string) error {
     args := []string{"-czvf", dstFile, "-C", srcDir, "."}
     cmd := exec.Command("tar", args...)
@@ -243,7 +241,7 @@ func createImage(srcDir, dstFile string) error {
     return cmd.Run()
 }
 
-// saveMetadata 함수는 메타데이터를 JSON 파일로 저장합니다.
+// 메타데이터 JSON 파일로 저장
 func saveMetadata(filePath string, metadata Metadata) error {
     file, err := os.Create(filePath)
     if err != nil {
