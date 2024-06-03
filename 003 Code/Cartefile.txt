@@ -1,2 +1,3 @@
-NAME imagetest
+NAME image
 PATH ./testdir
+exe_PATH ./testdir/testbuild
