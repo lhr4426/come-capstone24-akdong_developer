@@ -118,7 +118,7 @@ func buildImage() error {
 
     // 레이어 3: setup.sh 복사
     layer3Dir := filepath.Join(targetDir, "layer3")
-    setupScriptPath := "Carte_CLI_Layer2/setup.sh" // setup.sh 파일 경로
+    setupScriptPath := "setup.sh" // setup.sh 파일 경로
     err = createLayer(setupScriptPath, layer3Dir, "")
     if err != nil {
         return fmt.Errorf("failed to create layer3: %v", err)

@@ -1,5 +1,7 @@
 package main
 
+// layer 구분을 통한 이미지 압축(코드와 실행파일만 존재)
+
 import "carte_cli/cmd"
 
 func main() {

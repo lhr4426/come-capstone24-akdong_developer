@@ -1,5 +1,7 @@
 package main
 
+// 이미지 압축(layer구분 없음)
+
 import "carte_cli/cmd"
 
 func main() {
