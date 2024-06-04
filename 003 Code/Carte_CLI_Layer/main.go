@@ -20,10 +20,10 @@ func main() {
 // source ~/.bashrc
 // [권한 부여]
 // sudo mkdir /Carte
-// sudo mkdir /Carte build
+// sudo mkdir /Carte/images
 
 // whoami
-// sudo chown -R yj(whoami) /Carte/images
+// sudo chown -R yj /Carte/images
 
 
 // ==============================================================================
