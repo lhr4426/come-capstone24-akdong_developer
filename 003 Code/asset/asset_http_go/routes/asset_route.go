@@ -15,4 +15,7 @@ func AssetRoute(router *gin.Engine) {
 	// 맵을 불러올 때에는 검증 절차가 필요하지 않으니까 지금의 [GET]/asset_down도 있으면 좋음
 	router.GET("/asset_info", controllers.GetAsset())
 	router.GET("/asset_thumbnail", controllers.DownThumbnail())
+
+	// 240806 추가 : 에셋의 절반만 전송
+	router.GET("/asset_down_half", controllers.DownAssetHalf())
 }

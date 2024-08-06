@@ -305,3 +305,59 @@ func DownAsset() gin.HandlerFunc {
 		}
 	}
 }
+
+func DownAssetHalf() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		var results []models.DownFile
+		// asset id
+		id := c.Query("id")
+
+		filter := bson.M{}
+		if id != "" {
+			objID, err := primitive.ObjectIDFromHex(id) // 문자열 ID를 ObjectID로 변환
+			if err != nil {
+				log.Println("Invalid ID format :", err)
+				c.JSON(http.StatusBadRequest, gin.H{"code": 0, "message": "Invalid ID format"})
+				return
+			}
+			filter["_id"] = objID // 정확한 ObjectID로 필터링
+		}
+
+		cur, err := assetCollection.Find(ctx, filter)
+		if err != nil {
+			log.Println("Database query failed :", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"code": 0, "message": "Database query failed"})
+			return
+		}
+		defer cur.Close(ctx)
+
+		for cur.Next(ctx) {
+			var asset models.Asset
+			if err := cur.Decode(&asset); err != nil {
+				continue
+			}
+			result := models.DownFile{
+				ID:   asset.ID.Hex(),
+				File: asset.File,
+			}
+			results = append(results, result)
+		}
+
+		if err := cur.Err(); err != nil {
+			log.Println("Error reading from database :", err)
+			c.JSON(http.StatusInternalServerError, responses.AssetResponse{Code: 0, Message: "Error reading from database: " + err.Error()})
+			return
+		}
+
+		if len(results) == 0 {
+			log.Println("Success, but no assets found matching :", results)
+			c.JSON(http.StatusOK, responses.AssetResponse{Code: 1, Message: "Success, but no assets found matching the criteria", Data: results})
+		} else {
+			log.Println("Success, DownAsset :", results)
+			c.JSON(http.StatusOK, responses.AssetResponse{Code: 1, Message: "Assets retrieved successfully", Data: results})
+		}
+	}
+}
