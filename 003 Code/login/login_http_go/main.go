@@ -29,6 +29,7 @@ func main() {
 	e := echo.New()
 	e.POST("/signup", handler.SignUp)
 	e.POST("/login", handler.LogIn)
+	e.GET("/info", handler.Info)
 
 	e.Logger.Fatal(e.Start("0.0.0.0:8000"))
 

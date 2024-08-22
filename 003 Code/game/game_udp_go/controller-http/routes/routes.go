@@ -5,6 +5,5 @@ import (
 )
 
 func GameRoute(router *gin.Engine) {
-	router.GET("/creator_list")
-
+	router.GET("/creator_list", controllers.GetCreatorList())
 }
