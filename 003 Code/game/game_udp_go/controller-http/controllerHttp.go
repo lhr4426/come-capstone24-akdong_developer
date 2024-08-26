@@ -8,7 +8,8 @@ import (
 	"time"
 )
 
-var MapServerEndpoint = "http://10.0.16.70:8070"
+var MapServerEndpoint = "http://127.0.0.1:8070"
+var LoginServerEndpoint = "http://127.0.0.1:8000"
 
 func HttpGet(url string) []byte {
 	client := &http.Client{

@@ -2295,3 +2295,18 @@
 2024/08/22 10:46:41 userID :   usererr : sql: no rows in result set
 2024/08/22 10:46:46 Connected DB
 2024/08/22 10:46:46 success login : 1234
+2024/08/22 10:52:52 Connected DB
+2024/08/22 10:52:52 find user : 1234
+2024/08/26 09:19:41 Connected DB
+2024/08/26 09:19:41 find user : 1234
+2024/08/26 09:38:13 Connected DB
+2024/08/26 09:38:13 success login : 1234
+2024/08/26 09:45:29 Connected DB
+2024/08/26 09:45:46 Connected DB
+2024/08/26 09:45:58 Connected DB
+2024/08/26 09:46:06 Connected DB
+2024/08/26 09:46:06 find user : master
+2024/08/26 09:56:44 Connected DB
+2024/08/26 09:56:44 success login : master
+2024/08/26 11:34:47 Connected DB
+2024/08/26 11:34:47 success login : 1234

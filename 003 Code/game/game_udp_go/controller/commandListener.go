@@ -235,7 +235,7 @@ func MapReady(conn *net.UDPConn, m ReceiveMessage, addr string) (bool, string) {
 
 		if isUserAddrExists {
 			boolChan := make(chan bool)
-			go SendBeforeLog(UserMapid[m.SendUserId], m.SendUserId, boolChan)
+			go SendBeforeLog(conn, UserMapid[m.SendUserId], m.SendUserId, boolChan)
 			result := <-boolChan
 			if result {
 				return true, aurora.Sprintf(aurora.Green("Send After Log Complete"))
@@ -252,7 +252,7 @@ func MapReady(conn *net.UDPConn, m ReceiveMessage, addr string) (bool, string) {
 }
 
 // TODO : 유정이 답장오면 만들기
-func SendBeforeLog(mapid string, userId string, result chan bool) {
+func SendBeforeLog(conn *net.UDPConn, mapid string, userId string, result chan bool) {
 	mapSaveTimeString := controllerhttp.GetMapTime(mapid)
 	mapSaveTime, err := time.Parse(time.RFC3339Nano, mapSaveTimeString.Message)
 	if err != nil {

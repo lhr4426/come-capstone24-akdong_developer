@@ -10,11 +10,11 @@ services:
       - mongo-data:/data/db
     command: ["mongod", "--port", "27017"]
 
-  app:
+  udp:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: game
+    container_name: game_udp
     depends_on:
       - mongo
     environment:
@@ -23,6 +23,22 @@ services:
       - "8050:8050"
     volumes:
       - ./game_udp_go:/server_game
+    stdin_open: true
+    tty: true
+
+  http:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: game_http
+    depends_on:
+      - mongo
+    environment:
+      - MONGO_URI=mongodb://localhost:27017 # 환경 변수를 직접 설정합니다.
+    ports:
+      - "8060:8060"
+    volumes:
+      - ./game_http_go:/server_game
     stdin_open: true
     tty: true
 
