@@ -8,5 +8,6 @@ import (
 
 func GameRoute(router *gin.Engine) {
 	router.GET("/", controllers.GetTest())
-	// router.GET("/creator_list", controllers.GetCreatorList())
+	router.GET("/creator_list", controllers.GetCreatorList())
+	router.GET("/creator_list_all", controllers.GetCreatorListAll())
 }

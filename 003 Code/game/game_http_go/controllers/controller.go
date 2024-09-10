@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"reflect"
+	"strconv"
 
 	// "fmt"
 	"log"
@@ -12,65 +14,92 @@ import (
 	"time"
 
 	// "GameServer/controller"
+	"game_http_go/configs"
 	"game_http_go/responses"
 
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	// "go.mongodb.org/mongo-driver/bson"
 	// "go.mongodb.org/mongo-driver/mongo/options"
 )
 
-/*
+var creatorCollection *mongo.Collection = configs.GetCollection(configs.DB, "creators")
+
 func GetCreatorList() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
-		// 표시되는 필드만 표현
-		projection := bson.M{
-			"_id":     0,
-			"map_id":  1,
-			"mapName": 1,
-		}
+		mapId := c.Query("map_id")
 
-		// filter 모두 존재하는 경우에만 출력
-		filter := bson.M{
-			"$and": []bson.M{
-				{"map_id": bson.M{"$exists": true}},
-				{"mapName": bson.M{"$exists": true}},
-				{"chunkNum": 0},
-			},
-		}
+		fmt.Println(mapId)
+		fmt.Println(reflect.TypeOf(mapId))
 
-		mapCollection := controller.DBClient.Collection("creators")
-		// collection.Find(context:취소 시그널 및 타임아웃 전달, 빈맵 : 모든 문서 선택, setProjection(검색 옵션 설정))
-		// cursor : 결과 집합의 다음 항목 가져올 수 있음
-		//cursor, err := mapCollection.Find(ctx, bson.M{}, options.Find().SetProjection(projection)) // rejection이랑 filter 정확하게 알기
-		cursor, err := mapCollection.Find(ctx, filter, options.Find().SetProjection(projection))
+		creatorList := responses.CreatorListResponseMessage{}
+
+		intmapid, _ := strconv.Atoi(mapId)
+
+		filter := bson.M{"map_id": intmapid}
+		projection := bson.M{"_id": 0}
+
+		fmt.Println(filter)
+
+		err := creatorCollection.FindOne(ctx, filter, options.FindOne().SetProjection(projection)).Decode(&creatorList)
+		// fmt.Println("mapinfo", mapinfo)
+
 		if err != nil {
+			if err == mongo.ErrNoDocuments {
 
-			c.JSON(http.StatusInternalServerError, responses.MapResponse{Code: 0, Message: "error"})
-			log.Println("(list)FindErr :", err)
-			return
-		}
-
-		fmt.Println(cursor)
-
-		// cursor에서 반환된 모든 값을 가져와 map[string]interface{} 슬라이스로 변환
-		var results []map[string]interface{} // 여러개라서 []map[string]interface{}
-		if err = cursor.All(ctx, &results); err != nil {
-
-			c.JSON(http.StatusInternalServerError, responses.MapResponse{Code: 0, Message: "error"})
-			log.Println("(list)FindReturnErr :", err)
+				c.JSON(http.StatusNotFound, responses.DefaultReponse{Code: 1, Message: "Successed, but no results found"})
+				log.Println("(info)NoDocumentsErr :", err)
+				return
+			}
+			c.JSON(http.StatusInternalServerError, responses.DefaultReponse{Code: 0, Message: err.Error()})
 			return
 		}
 
 		// JSON으로 결과 반환
 
-		c.JSON(http.StatusOK, responses.MapResponse_list{Code: 1, Message: results})
+		c.JSON(http.StatusOK, responses.CreatorListResponse{Code: 1, Message: creatorList})
 		log.Println("(list)Success")
 	}
-}*/
+}
+
+func GetCreatorListAll() gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		_, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		filter := bson.M{}
+		projection := bson.M{"_id": 0}
+
+		cursor, err := creatorCollection.Find(context.TODO(), filter, options.Find().SetProjection(projection))
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer cursor.Close(context.TODO())
+
+		// 결과 출력
+		for cursor.Next(context.TODO()) {
+			var result bson.M
+			if err := cursor.Decode(&result); err != nil {
+				log.Fatal(err)
+			}
+			fmt.Println(result)
+		}
+
+		if err := cursor.Err(); err != nil {
+			log.Fatal(err)
+		}
+
+		c.JSON(http.StatusOK, responses.DefaultReponse{Code: 1, Message: "All List is done. Look Logs"})
+		log.Println("(list)Success")
+	}
+}
 
 var LoginServerEndpoint = "http://127.0.0.1:8000"
 

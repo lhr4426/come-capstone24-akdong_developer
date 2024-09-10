@@ -40,7 +40,7 @@ func ItemLock(userId string, itemId string) {
 func ItemUnlock(userId string, itemId string) {
 	mapId := UserMapid[userId]
 
-	lockedList, _ := MapidLockedList[mapId]
+	lockedList := MapidLockedList[mapId]
 
 	var itemIndex int
 
@@ -106,9 +106,10 @@ func isUserExists(userId string, addr string) bool {
 	return usrExt && addExt && mapExt && userListExt
 }
 func createCreatorList(mapid string) bool {
+	intmapid, _ := strconv.Atoi(mapid)
 	datas := CreatorLists{
-		MapId:    mapid,
-		Creators: []string{},
+		Map_id:       intmapid,
+		Creator_list: []UserAuth{},
 	}
 	_, err := DBClient.Collection("creators").InsertOne(context.TODO(), datas)
 	return err == nil
@@ -137,8 +138,8 @@ func isCreator(userId string) bool {
 		return false
 	}
 	// fmt.Printf("Map [%s] Creators : [%v]", mapid, datas.Creators)
-	for _, user := range datas.Creators {
-		if userId == user {
+	for _, creator_one := range datas.Creator_list {
+		if userId == creator_one.User.User_id && creator_one.Room_authority > 0 {
 			return true
 		}
 	}
@@ -146,7 +147,7 @@ func isCreator(userId string) bool {
 }
 
 func isAdmin(userId string) bool {
-	if userId == "abc" || userId == "abcd" || userId == "abcde" {
+	if userId == "1234" {
 		return true
 	} else {
 		return false
