@@ -1,19 +1,9 @@
 package responses
 
-type UserInfo struct {
-	User_key string `bson:"user_key"`
-	User_id  string `bson:"user_id"`
-	Nickname string `bson:"nickname"`
-}
-
-type UserAuth struct {
-	User           UserInfo `bson:"user"`
-	Room_authority int      `bson:"room_authority"`
-}
-
 type CreatorListResponseMessage struct {
-	Map_id       int        `bson:"map_id" json:"map_id"`
-	Creator_list []UserAuth `bson:"creator_list" json:"creator_list"`
+	Map_id       int      `bson:"map_id" json:"map_id"`
+	Admin_id     string   `bson:"admin_id" json:"admin_id"`
+	Creator_list []string `bson:"creator_list" json:"creator_list"`
 }
 
 type CreatorListResponse struct {

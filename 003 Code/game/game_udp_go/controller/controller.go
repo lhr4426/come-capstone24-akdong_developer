@@ -26,6 +26,7 @@ var UserMapid map[string]string = make(map[string]string)
 var MapidUserList map[string][]string = make(map[string][]string)
 var MapidLockedList map[string][]string = make(map[string][]string)
 var LockObjUser map[string]string = make(map[string]string)
+var MapidCreatorList map[string][]string = make(map[string][]string)
 
 var ListenerMap = map[string]listeners{
 	"PlayerJoin":    PlayerJoin,

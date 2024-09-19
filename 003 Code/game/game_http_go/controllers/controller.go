@@ -27,6 +27,41 @@ import (
 
 var creatorCollection *mongo.Collection = configs.GetCollection(configs.DB, "creators")
 
+func GetExistCreatorList() gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		var result bson.M
+
+		mapId := c.Query("map_id")
+
+		intmapid, _ := strconv.Atoi(mapId)
+
+		filter := bson.M{"map_id": intmapid}
+
+		fmt.Println(filter)
+
+		err := creatorCollection.FindOne(ctx, filter).Decode(&result)
+		// fmt.Println("mapinfo", mapinfo)
+
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+
+				c.JSON(http.StatusNotFound, responses.DefaultReponse{Code: 1, Message: "false"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, responses.DefaultReponse{Code: 0, Message: err.Error()})
+			return
+		}
+
+		// JSON으로 결과 반환
+
+		c.JSON(http.StatusOK, responses.DefaultReponse{Code: 1, Message: "true"})
+	}
+}
+
 func GetCreatorList() gin.HandlerFunc {
 	return func(c *gin.Context) {
 

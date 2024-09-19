@@ -24,21 +24,11 @@ type LogMessage struct {
 	OriginalMessage string
 }
 
-type UserInfo struct {
-	User_key string `bson:"user_key"`
-	User_id  string `bson:"user_id"`
-	Nickname string `bson:"nickname"`
-}
-
-type UserAuth struct {
-	User           UserInfo `bson:"user"`
-	Room_authority int      `bson:"room_authority"`
-}
-
 type CreatorLists struct {
-	ID           primitive.ObjectID `bson:"_id,omitempty"`
+	ID           primitive.ObjectID `bson:"_id"`
 	Map_id       int                `bson:"map_id"`
-	Creator_list []UserAuth         `bson:"creator_list"`
+	Admin_id     string             `bson:"admin_id"`
+	Creator_list []string           `bson:"creator_list"`
 }
 
 type LogResponseData struct {

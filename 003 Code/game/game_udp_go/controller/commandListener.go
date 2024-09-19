@@ -11,7 +11,6 @@ import (
 
 	"github.com/logrusorgru/aurora"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // Listener는 ReceiveMessage와 연결 정보를 받고
@@ -109,7 +108,7 @@ func createCreatorList(mapid string) bool {
 	intmapid, _ := strconv.Atoi(mapid)
 	datas := CreatorLists{
 		Map_id:       intmapid,
-		Creator_list: []UserAuth{},
+		Creator_list: []string{},
 	}
 	_, err := DBClient.Collection("creators").InsertOne(context.TODO(), datas)
 	return err == nil
@@ -120,29 +119,17 @@ func isCreator(userId string) bool {
 		return true
 	}
 
-	var datas CreatorLists
-
 	mapid, mapResult := UserMapid[userId]
 	if !mapResult {
 		return false
 	}
 
-	filter := bson.M{"MapId": mapid}
-
-	err := DBClient.Collection("creators").FindOne(context.TODO(), filter).Decode(&datas)
-	// fmt.Printf("creatorResult : [%v]\n", creatorResult)
-	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			createCreatorList(mapid)
-		}
-		return false
-	}
-	// fmt.Printf("Map [%s] Creators : [%v]", mapid, datas.Creators)
-	for _, creator_one := range datas.Creator_list {
-		if userId == creator_one.User.User_id && creator_one.Room_authority > 0 {
+	for _, creators := range MapidCreatorList[mapid] {
+		if userId == creators {
 			return true
 		}
 	}
+
 	return false
 }
 

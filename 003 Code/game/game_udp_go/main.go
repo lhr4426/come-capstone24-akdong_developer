@@ -13,7 +13,8 @@ import (
 
 func main() {
 
-	go controllerdb.ConnectDB()
+	controllerdb.ConnectDB()
+	controllerdb.CreatorInit()
 
 	// UDP 서버 소켓 생성
 	addr, err := net.ResolveUDPAddr("udp", ":8050")
