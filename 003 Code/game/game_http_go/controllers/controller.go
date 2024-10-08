@@ -62,6 +62,8 @@ func GetExistCreatorList() gin.HandlerFunc {
 	}
 }
 
+// TODO :
+
 func GetCreatorList() gin.HandlerFunc {
 	return func(c *gin.Context) {
 

@@ -11,6 +11,6 @@ type MapResponse_map struct {
 }
 
 type MapResponse_list struct {
-    Code    int                      `json:"code"`
-    Message []map[string]interface{} `json:"message"`
+	Code    int                      `json:"code"`
+	Message []map[string]interface{} `json:"message"`
 }

@@ -1,4 +1,3 @@
-
 package main
 
 import (
@@ -31,4 +30,5 @@ func main() {
 	if err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
+
 }
