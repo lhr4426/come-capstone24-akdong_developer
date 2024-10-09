@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"map_http_go/responses"
-	"net"
 	"net/http"
 	"time"
 
@@ -106,26 +105,15 @@ func NewMap() gin.HandlerFunc {
 
 		c.JSON(http.StatusOK, responses.MapResponse_map{Code: 1, Message: responseData})
 
-		udpAddr, err := net.ResolveUDPAddr("udp", "localhost:8050") // 게임 UDP서버 연결
-		if err != nil {
-			fmt.Println("UDP resolve error:", err)
-			return
+		newCreatorDatas := bson.M{
+			"Map_id":       newMapId,
+			"Admin_id":     creatorId,
+			"Creator_list": []string{creatorId},
 		}
-
-		conn, err := net.DialUDP("udp", nil, udpAddr)
+		_, err = creatorCollection.InsertOne(context.TODO(), newCreatorDatas)
 		if err != nil {
-			fmt.Println("UDP connection error:", err)
+			c.JSON(http.StatusInternalServerError, responses.MapResponse{Code: 0, Message: err.Error()})
+			log.Fatal()
 		}
-		defer conn.Close()
-
-		message := fmt.Sprintf("CreateNewMap$%v$%v$%v", creatorId, time.Now().UTC().Format(time.RFC3339Nano), newMapId)
-		_, err = conn.Write([]byte(message))
-		if err != nil {
-			fmt.Println("Send UDP Error :", err)
-			return
-		}
-
-		fmt.Println("Send UDP Successed")
-
 	}
 }

@@ -9,6 +9,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var MapDbUri = "mongodb://mongo:27016"
+var GameDbUri = "mongodb://mongo:27017"
+
 func main() {
 	fpLog, err := os.OpenFile("logfile.txt", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
@@ -21,7 +24,8 @@ func main() {
 
 	router := gin.Default()
 
-	configs.ConnectDB()
+	configs.ConnectDB(MapDbUri)
+	configs.ConnectDB(GameDbUri)
 
 	routes.MapRoute(router)
 

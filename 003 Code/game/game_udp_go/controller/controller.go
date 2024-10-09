@@ -39,7 +39,6 @@ var ListenerMap = map[string]listeners{
 	"AssetDeselect": AssetDeselect,
 	"MapReady":      MapReady,
 	"PlayerJump":    PlayerJump,
-	"CreateNewMap":  CreateNewMap,
 	"ManagerEdit":   ManagerEdit,
 }
 

@@ -9,15 +9,15 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func ConnectDB() *mongo.Client {
+func ConnectDB(uri string) *mongo.Client {
 
 	// 접속할 MongoDB 주소 설정
-	clientOptions := options.Client().ApplyURI("mongodb://mongo:27016")
+	clientOptions := options.Client().ApplyURI(uri)
 
 	// MongoDB 연결
 	client, err := mongo.Connect(context.TODO(), clientOptions)
 	if err != nil {
-		log.Fatal("mongo connect err :",err)
+		log.Fatal("mongo connect err :", err)
 	}
 
 	// 연결 확인
@@ -32,10 +32,11 @@ func ConnectDB() *mongo.Client {
 }
 
 // Client instance
-var DB *mongo.Client = ConnectDB()
+var MapDB *mongo.Client = ConnectDB("mongodb://mongo:27016")
+var GameDB *mongo.Client = ConnectDB("mongodb://mongo:27017")
 
 // getting database collections
-func GetCollection(client *mongo.Client, collectionName string) *mongo.Collection {
-	collection := client.Database("go_map").Collection(collectionName)
+func GetCollection(client *mongo.Client, databaseName string, collectionName string) *mongo.Collection {
+	collection := client.Database(databaseName).Collection(collectionName)
 	return collection
 }

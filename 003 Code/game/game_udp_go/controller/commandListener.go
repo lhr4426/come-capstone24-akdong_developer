@@ -112,7 +112,7 @@ func otherMessageLengthCheck(commandName string, messageLength int) bool {
 		return messageLength == 4
 	case "PlayerJoin", "PlayerMove", "ManagerEdit":
 		return messageLength == 2
-	case "AssetDelete", "AssetSelect", "AssetDeselect", "CreateNewMap":
+	case "AssetDelete", "AssetSelect", "AssetDeselect":
 		return messageLength == 1
 	case "PlayerLeave", "MapReady", "PlayerJump":
 		return messageLength == 0
@@ -134,16 +134,6 @@ func isUserExists(userId string, addr string) bool {
 		}
 	}
 	return usrExt && addExt && mapExt && userListExt
-}
-func createCreatorList(mapid string, creatorid string) error {
-	intmapid, _ := strconv.Atoi(mapid)
-	datas := CreatorLists{
-		Map_id:       intmapid,
-		Admin_id:     creatorid,
-		Creator_list: []string{creatorid},
-	}
-	_, err := DBClient.Collection("creators").InsertOne(context.TODO(), datas)
-	return err
 }
 
 func isCreator(userId string) bool {
@@ -214,7 +204,7 @@ func PlayerJoin(conn *net.UDPConn, m ReceiveMessage, addr string) (bool, string)
 			UserMapid[m.SendUserId] = mapid
 
 			mapUsers := MapidUserList[mapid]
-			fmt.Printf("map Users : %v\n", mapUsers)
+
 			if len(mapUsers) > 0 {
 				// IP:Port 형태를 UDPAddr 로 변경해서 저장 시도
 				udpAddr, err := net.ResolveUDPAddr("udp", addr)
@@ -225,12 +215,16 @@ func PlayerJoin(conn *net.UDPConn, m ReceiveMessage, addr string) (bool, string)
 						conn.WriteToUDP([]byte("PlayerJoin$"+user+";12345678;"+user+";"+mapid+";s"), udpAddr)
 					}
 				}
+			} else if len(mapUsers) == 0 {
+				CreatorListLoad()
 			}
 
 			mapUsers = append(MapidUserList[mapid], m.SendUserId)
-			if len(mapUsers) > 1 {
-				sort.Strings(mapUsers)
-			}
+
+			// if len(mapUsers) > 1 {
+			// sort.Strings(mapUsers) // 굳이 정렬할 필요 없을듯
+			// }
+			fmt.Printf("map Users : %v\n", mapUsers)
 			MapidUserList[mapid] = mapUsers
 
 			return true, aurora.Sprintf(aurora.Green("Success : User [%s] joined Map [%s]"), m.SendUserId, mapid)
@@ -593,34 +587,7 @@ func PlayerJump(conn *net.UDPConn, m ReceiveMessage, addr string) (bool, string)
 	if isUserExists(m.SendUserId, addr) {
 		return true, aurora.Sprintf(aurora.Green("Success : User [%s] Jump\n"), m.SendUserId)
 	} else {
-		return false, aurora.Sprintf(aurora.Yellow("Error : Cannot Found User [%s]"), m.SendUserId)
-	}
-}
-
-func CreateNewMap(conn *net.UDPConn, m ReceiveMessage, addr string) (bool, string) {
-	// NewMapCreate 형태 :
-	// NewMapCreate$SendUserId;SendTime;NewMapId
-	// otherMessage length : 1
-
-	// 보낸 유저가 있는 유저고, creators DB에 정상적으로 insert 됐으면 return true
-	if otherMessageLengthCheck(m.CommandName, len(m.OtherMessage)) {
-		if isUserExists(m.SendUserId, addr) {
-			err := createCreatorList(m.OtherMessage[0], m.SendUserId)
-			if err != nil {
-				log.Fatal()
-				return false, aurora.Sprintf(aurora.Yellow("Error : Create New List Error [%s]"), err.Error())
-			}
-			err = CreatorListLoad()
-			if err != nil {
-				log.Fatal()
-				return false, aurora.Sprintf(aurora.Yellow("Error : Refresh Creator List Error [%s]"), err.Error())
-			}
-			return true, aurora.Sprintf(aurora.Green("Success : User [%s] Insert New Creator List for Map [%s]\n"), m.SendUserId, m.OtherMessage[0])
-		} else {
-			return false, aurora.Sprintf(aurora.Yellow("Error : Cannot Found User [%s]"), m.SendUserId)
-		}
-	} else {
-		return false, aurora.Sprintf(aurora.Yellow("Error : NewMapCreate Message Length Error : need 1, received %d"), len(m.OtherMessage))
+		return false, aurora.Sprintf(aurora.Yellow("Errodr : Cannot Found User [%s]"), m.SendUserId)
 	}
 }
 
