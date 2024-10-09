@@ -4,6 +4,7 @@ import (
 	controllerhttp "GameServer/controller-http"
 	"context"
 	"fmt"
+	"log"
 	"net"
 	"sort"
 	"strconv"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/logrusorgru/aurora"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // Listener는 ReceiveMessage와 연결 정보를 받고
@@ -73,15 +75,44 @@ func isLocked(userId string, itemId string) bool {
 	return false
 }
 
+func CreatorListLoad() error {
+	creatorCollection := DBClient.Collection("creators")
+
+	cursor, err := creatorCollection.Find(context.TODO(), bson.D{})
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+	defer cursor.Close(context.TODO())
+
+	// 기존의 creatorlist 초기화
+	MapidCreatorList = make(map[string][]string)
+
+	// 결과 출력
+	for cursor.Next(context.TODO()) {
+		var result CreatorLists
+		if err := cursor.Decode(&result); err != nil {
+
+			log.Fatal(err)
+			return err
+		}
+		fmt.Println(result)
+		MapidCreatorList[strconv.Itoa(result.Map_id)] = result.Creator_list
+	}
+
+	fmt.Printf("Creator List Loaded\n")
+	return nil
+}
+
 func otherMessageLengthCheck(commandName string, messageLength int) bool {
 	switch commandName {
 	case "AssetCreate":
 		return messageLength == 8
 	case "AssetMove":
 		return messageLength == 4
-	case "PlayerJoin", "PlayerMove":
+	case "PlayerJoin", "PlayerMove", "ManagerEdit":
 		return messageLength == 2
-	case "AssetDelete", "AssetSelect", "AssetDeselect":
+	case "AssetDelete", "AssetSelect", "AssetDeselect", "CreateNewMap":
 		return messageLength == 1
 	case "PlayerLeave", "MapReady", "PlayerJump":
 		return messageLength == 0
@@ -104,14 +135,15 @@ func isUserExists(userId string, addr string) bool {
 	}
 	return usrExt && addExt && mapExt && userListExt
 }
-func createCreatorList(mapid string) bool {
+func createCreatorList(mapid string, creatorid string) error {
 	intmapid, _ := strconv.Atoi(mapid)
 	datas := CreatorLists{
 		Map_id:       intmapid,
-		Creator_list: []string{},
+		Admin_id:     creatorid,
+		Creator_list: []string{creatorid},
 	}
 	_, err := DBClient.Collection("creators").InsertOne(context.TODO(), datas)
-	return err == nil
+	return err
 }
 
 func isCreator(userId string) bool {
@@ -562,5 +594,107 @@ func PlayerJump(conn *net.UDPConn, m ReceiveMessage, addr string) (bool, string)
 		return true, aurora.Sprintf(aurora.Green("Success : User [%s] Jump\n"), m.SendUserId)
 	} else {
 		return false, aurora.Sprintf(aurora.Yellow("Error : Cannot Found User [%s]"), m.SendUserId)
+	}
+}
+
+func CreateNewMap(conn *net.UDPConn, m ReceiveMessage, addr string) (bool, string) {
+	// NewMapCreate 형태 :
+	// NewMapCreate$SendUserId;SendTime;NewMapId
+	// otherMessage length : 1
+
+	// 보낸 유저가 있는 유저고, creators DB에 정상적으로 insert 됐으면 return true
+	if otherMessageLengthCheck(m.CommandName, len(m.OtherMessage)) {
+		if isUserExists(m.SendUserId, addr) {
+			err := createCreatorList(m.OtherMessage[0], m.SendUserId)
+			if err != nil {
+				log.Fatal()
+				return false, aurora.Sprintf(aurora.Yellow("Error : Create New List Error [%s]"), err.Error())
+			}
+			err = CreatorListLoad()
+			if err != nil {
+				log.Fatal()
+				return false, aurora.Sprintf(aurora.Yellow("Error : Refresh Creator List Error [%s]"), err.Error())
+			}
+			return true, aurora.Sprintf(aurora.Green("Success : User [%s] Insert New Creator List for Map [%s]\n"), m.SendUserId, m.OtherMessage[0])
+		} else {
+			return false, aurora.Sprintf(aurora.Yellow("Error : Cannot Found User [%s]"), m.SendUserId)
+		}
+	} else {
+		return false, aurora.Sprintf(aurora.Yellow("Error : NewMapCreate Message Length Error : need 1, received %d"), len(m.OtherMessage))
+	}
+}
+
+func ManagerEdit(conn *net.UDPConn, m ReceiveMessage, addr string) (bool, string) {
+	// NewMapCreate 형태 :
+	// ManagerEdit$SendUserId;SendTime;EditUserId;{Add|Delete}
+	// otherMessage length : 2
+
+	// 1. SendUserId가 존재하는 유저고,
+	// 2-1. {Add의 경우} SendUserId가 있는 맵의 Creator List 중 EditUserId가 없어야 함 (있으면 그냥 break)
+	// 2-2. {Delete의 경우} SendUserId가 있는 맵의 Creator List 중 EditUserId가 있어야 함 (없으면 그냥 break)
+	if otherMessageLengthCheck(m.CommandName, len(m.OtherMessage)) {
+		if isUserExists(m.SendUserId, addr) {
+			sendUserMapid, err := strconv.Atoi(UserMapid[m.SendUserId])
+			if err != nil {
+				log.Fatal()
+				return false, aurora.Sprintf(aurora.Yellow("Error : Cannot Convert Mapid [%s]"), err)
+			}
+
+			creatorList := CreatorLists{}
+
+			filter := bson.M{"map_id": sendUserMapid}
+
+			err = DBClient.Collection("creators").FindOne(context.TODO(), filter).Decode(&creatorList)
+
+			if err != nil {
+				if err == mongo.ErrNoDocuments {
+					return false, aurora.Sprintf(aurora.Yellow("Error : No Creator Lists in Map [%s]"), sendUserMapid)
+				}
+				return false, aurora.Sprintf(aurora.Yellow("Error : MongoDB Error [%s]"), err)
+			}
+
+			var newCreatorList []string
+
+			if m.OtherMessage[1] == "Add" {
+				newCreatorList = append(creatorList.Creator_list, m.OtherMessage[0])
+			} else if m.OtherMessage[1] == "Delete" {
+				for _, creator := range creatorList.Creator_list {
+					if m.OtherMessage[0] == creator {
+						continue
+					} else {
+						newCreatorList = append(newCreatorList, creator)
+					}
+				}
+			} else {
+				return false, aurora.Sprintf(aurora.Yellow("Error : Unavailable Command [%s]"), m.OtherMessage[1])
+			}
+
+			filter = bson.M{"ID": creatorList.ID}
+			update := bson.M{
+				"$set": bson.M{
+					"creator_list": newCreatorList,
+				},
+			}
+
+			_, err = DBClient.Collection("creators").UpdateOne(context.TODO(), filter, update)
+
+			if err != nil {
+				log.Fatal()
+				return false, aurora.Sprintf(aurora.Yellow("Error : Creator List Update Error [%s]"), err)
+			}
+
+			err = CreatorListLoad()
+			if err != nil {
+				log.Fatal()
+				return false, aurora.Sprintf(aurora.Yellow("Error : Refresh Creator List Error [%s]"), err.Error())
+			}
+
+			return true, aurora.Sprintf(aurora.Green("Success : User [%s] %s Map [%s]\n"), m.OtherMessage[0], m.OtherMessage[1], sendUserMapid)
+
+		} else {
+			return false, aurora.Sprintf(aurora.Yellow("Error : Cannot Found User [%s]"), m.SendUserId)
+		}
+	} else {
+		return false, aurora.Sprintf(aurora.Yellow("Error : NewMapCreate Message Length Error : need 1, received %d"), len(m.OtherMessage))
 	}
 }

@@ -13,8 +13,8 @@ import (
 
 func main() {
 
-	controllerdb.ConnectDB()
-	controllerdb.CreatorInit()
+	controller.DBClient = controllerdb.ConnectDB()
+	controller.CreatorListLoad()
 
 	// UDP 서버 소켓 생성
 	addr, err := net.ResolveUDPAddr("udp", ":8050")
@@ -29,6 +29,8 @@ func main() {
 		return
 	}
 	defer conn.Close()
+
+	GetOutboundIP()
 
 	fmt.Println(aurora.Green("============= Game Server Started ============="))
 
