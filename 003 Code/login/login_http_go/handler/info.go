@@ -12,7 +12,7 @@ import (
 )
 
 func Info(c echo.Context) error {
-	userId := c.QueryParam("userid")
+	userId := c.QueryParam("user_id")
 	user := new(models.User)
 
 	// ---------- 전송 코드 -------------------
@@ -48,7 +48,6 @@ func Info(c echo.Context) error {
 		log.Println("returnerr :", err)
 		return err
 	}
-	
 
 	c_1 := &models.CodeInfo{
 		Code: 1,

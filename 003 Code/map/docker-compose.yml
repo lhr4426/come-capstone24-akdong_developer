@@ -9,6 +9,8 @@ services:
     volumes:
       - mongo-data:/data/db
     command: ["mongod", "--port", "27016"]  # MongoDB를 27016 포트로 실행
+    networks:
+      - game-map-network
 
   server:
     build:
@@ -21,6 +23,12 @@ services:
       - mongo
     environment:
       MONGO_URL: mongodb://mongo:27016  # 내부적으로 27016 포트를 사용
+    networks:
+      - game-map-network
 
 volumes:
   mongo-data:
+
+networks:
+  game-map-network:
+    external: true

@@ -14,13 +14,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-var mapCollection *mongo.Collection = configs.GetCollection(configs.MapDB, "go_map", "map")
-var creatorCollection *mongo.Collection = configs.GetCollection(configs.GameDB, "GameServer", "creator")
+var mapColl *mongo.Collection = configs.GetCollection(configs.MapDB, "go_map", "map")
+var creatorColl *mongo.Collection = configs.GetCollection(configs.GameDB, "GameServer", "creators")
 
 // mapCTime 전송하기 (timestamp)
 
 // json 파일 DB 저장
-func CreateMap() gin.HandlerFunc {
+func SaveMap() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -60,12 +60,12 @@ func CreateMap() gin.HandlerFunc {
 		// fmt.Println(filter)
 
 		var existingData map[string]interface{}
-		err := mapCollection.FindOne(ctx, filter).Decode(&existingData) // 다른 map으로 만들것, 계속 같은 mapdata(들어온 값)사용해서 오류남, existingData(확인하는 값)
+		err := mapColl.FindOne(ctx, filter).Decode(&existingData) // 다른 map으로 만들것, 계속 같은 mapdata(들어온 값)사용해서 오류남, existingData(확인하는 값)
 
 		// 중복 없을 때 Insert
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
-				_, err := mapCollection.InsertOne(ctx, mapdata) // DB에 바로 저장
+				_, err := mapColl.InsertOne(ctx, mapdata) // DB에 바로 저장
 				if err != nil {
 
 					c.JSON(http.StatusInternalServerError, responses.MapResponse{Code: 0, Message: "insert error"})
@@ -86,7 +86,7 @@ func CreateMap() gin.HandlerFunc {
 
 		// Update(모두 삭제 하고 Insert)
 		// 모두 삭제(if chunkNum이 더 있으면)
-		_, err2 := mapCollection.ReplaceOne(ctx, filter, mapdata)
+		_, err2 := mapColl.ReplaceOne(ctx, filter, mapdata)
 		if err2 != nil {
 
 			c.JSON(http.StatusInternalServerError, responses.MapResponse{Code: 0, Message: "error"})
@@ -106,7 +106,7 @@ func CreateMap() gin.HandlerFunc {
 			},
 		}
 
-		_, chk_err := mapCollection.DeleteMany(ctx, filterDelete)
+		_, chk_err := mapColl.DeleteMany(ctx, filterDelete)
 		if chk_err != nil {
 
 			c.JSON(http.StatusInternalServerError, responses.MapResponse{Code: 0, Message: "delete err"})

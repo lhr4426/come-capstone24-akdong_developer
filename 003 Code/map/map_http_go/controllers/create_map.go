@@ -17,13 +17,13 @@ import (
 
 // mapCTime 전송하기 (timestamp)
 // 새 맵 만들기
-func NewMap() gin.HandlerFunc {
+func CreateNewMap() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
-		existMapidList, err := mapCollection.Distinct(ctx, "map_id", bson.M{})
+		existMapidList, err := mapColl.Distinct(ctx, "map_id", bson.M{})
 		if (err != nil) && (err != mongo.ErrNoDocuments) {
 			c.JSON(http.StatusInternalServerError, responses.MapResponse{Code: 0, Message: err.Error()})
 			log.Fatal()
@@ -94,7 +94,7 @@ func NewMap() gin.HandlerFunc {
 			newMapChunkData,
 		}
 
-		_, err = mapCollection.InsertMany(context.TODO(), newMapDocs)
+		_, err = mapColl.InsertMany(context.TODO(), newMapDocs)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, responses.MapResponse{Code: 0, Message: err.Error()})
 			log.Fatal()
@@ -106,11 +106,11 @@ func NewMap() gin.HandlerFunc {
 		c.JSON(http.StatusOK, responses.MapResponse_map{Code: 1, Message: responseData})
 
 		newCreatorDatas := bson.M{
-			"Map_id":       newMapId,
-			"Admin_id":     creatorId,
-			"Creator_list": []string{creatorId},
+			"map_id":       newMapId,
+			"admin_id":     creatorId,
+			"creator_list": []string{creatorId},
 		}
-		_, err = creatorCollection.InsertOne(context.TODO(), newCreatorDatas)
+		_, err = creatorColl.InsertOne(context.TODO(), newCreatorDatas)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, responses.MapResponse{Code: 0, Message: err.Error()})
 			log.Fatal()

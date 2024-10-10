@@ -24,7 +24,7 @@ func GetMap() gin.HandlerFunc {
 		defer cancel()
 
 		// // url에서 매개변수 추출
-		mapId, _ := strconv.ParseFloat(c.Query("mapID"), 64) // double로 저장되어 있는데 .Atoi(int변환)으로 해서 반환 못하는 문제 발생 (해결완)
+		mapId, _ := strconv.ParseFloat(c.Query("map_id"), 64) // double로 저장되어 있는데 .Atoi(int변환)으로 해서 반환 못하는 문제 발생 (해결완)
 		mapVersion, _ := strconv.ParseFloat(c.Query("version"), 64)
 		mapChunk, _ := strconv.ParseFloat(c.Query("chunk"), 64)
 
@@ -40,14 +40,14 @@ func GetMap() gin.HandlerFunc {
 		// fmt.Println("filter", filter)
 
 		// ObjectId 제거
-		err := mapCollection.FindOne(ctx, filter).Decode(&mapinfo)
+		err := mapColl.FindOne(ctx, filter).Decode(&mapinfo)
 		// fmt.Println("mapinfo", mapinfo)
 
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
-				
+
 				c.JSON(http.StatusNotFound, responses.MapResponse{Code: 0, Message: "No documents found"})
-				log.Println("(info)NoDocumentsErr :",err)
+				log.Println("(info)NoDocumentsErr :", err)
 				return
 			}
 			c.JSON(http.StatusInternalServerError, responses.MapResponse{Code: 0, Message: err.Error()})
@@ -63,9 +63,8 @@ func GetMap() gin.HandlerFunc {
 			}
 		}
 
-		
 		// 데이터 반환
 		c.JSON(http.StatusOK, responses.MapResponse_map{Code: 1, Message: filtermapinfo}) // 형변환
-		log.Println("(info)InfoSuccess :",mapId)
+		log.Println("(info)InfoSuccess :", mapId)
 	}
 }

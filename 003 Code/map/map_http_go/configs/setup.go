@@ -32,8 +32,8 @@ func ConnectDB(uri string) *mongo.Client {
 }
 
 // Client instance
-var MapDB *mongo.Client = ConnectDB("mongodb://mongo:27016")
-var GameDB *mongo.Client = ConnectDB("mongodb://mongo:27017")
+var MapDB *mongo.Client = ConnectDB("mongodb://map_mongo:27016")
+var GameDB *mongo.Client = ConnectDB("mongodb://game_mongo:27017")
 
 // getting database collections
 func GetCollection(client *mongo.Client, databaseName string, collectionName string) *mongo.Collection {

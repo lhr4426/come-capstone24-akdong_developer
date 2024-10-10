@@ -2318,3 +2318,27 @@
 2024/10/08 12:33:02 success login : 1234
 2024/10/08 12:53:17 Connected DB
 2024/10/08 12:53:17 success login : 1234
+2024/10/09 23:23:29 Connected DB
+2024/10/09 23:23:29 userID :   usererr : sql: no rows in result set
+2024/10/09 23:23:34 Connected DB
+2024/10/09 23:23:34 success login : 1234
+2024/10/09 23:25:23 Connected DB
+2024/10/09 23:25:23 success login : 1234
+2024/10/09 23:27:06 Connected DB
+2024/10/09 23:27:06 success login : 1234
+2024/10/09 23:40:14 Connected DB
+2024/10/09 23:40:14 success login : 1234
+2024/10/09 23:42:36 Connected DB
+2024/10/09 23:42:36 success login : 1234
+2024/10/09 23:43:18 Connected DB
+2024/10/09 23:43:18 success login : 1234
+2024/10/09 23:47:15 Connected DB
+2024/10/09 23:47:15 success login : 1234
+2024/10/09 23:51:02 Connected DB
+2024/10/09 23:51:02 success login : 1234
+2024/10/09 23:51:40 Connected DB
+2024/10/09 23:51:41 passworderr : <nil>
+2024/10/09 23:51:44 Connected DB
+2024/10/09 23:51:44 success login : manager
+2024/10/09 23:56:06 Connected DB
+2024/10/09 23:56:06 success login : 1234

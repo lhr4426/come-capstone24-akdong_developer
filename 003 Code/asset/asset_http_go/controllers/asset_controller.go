@@ -139,7 +139,7 @@ func SearchAsset() gin.HandlerFunc {
 		var results []models.SearchResult
 
 		name := c.Query("name")
-		categoryidStr := c.Query("categoryid")
+		categoryidStr := c.Query("category_id")
 
 		filter := bson.M{}
 		if name != "" {
