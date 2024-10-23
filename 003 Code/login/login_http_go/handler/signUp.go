@@ -55,7 +55,7 @@ func SignUp(c echo.Context) error {
 
 	_, err = db.Exec(query_r, user.User_id, user.User_pw, user.Nickname, user.Email)
 	if err != nil {
-		log.Println("Failed to insert data: %v", err)
+		log.Fatal("Failed to insert data:", err)
 	}
 
 	// Success
